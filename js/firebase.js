@@ -1,9 +1,15 @@
-import { APP_CONFIG } from './config.js';
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { CONFIG } from './config.js';
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, browserLocalPersistence, setPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-export const app = initializeApp(APP_CONFIG.firebaseConfig);
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-export const CONFIG = APP_CONFIG; // Export config supaya bisa dipakai file lain
+// Singleton — cegah duplicate init
+const app  = getApps().length ? getApp() : initializeApp(CONFIG.firebase);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+
+// Auth persist local (tidak logout kalau browser ditutup)
+// FIX LAG: hapus enableIndexedDbPersistence — menyebabkan lag & error di GitHub Pages (cross-origin)
+setPersistence(auth, browserLocalPersistence).catch(() => {});
+
+export { app, db, auth };
