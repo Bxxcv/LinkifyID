@@ -3,308 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LINKify - Link Bio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" type="image/png" sizes="32x32" href="logo-linkify.png">
+  <title>LINKify — Link Bio Toko</title>
+  <link rel="icon" href="logo-linkify.png">
   <link rel="apple-touch-icon" href="logo-linkify.png">
   <link rel="manifest" href="manifest.json">
-  <style>
-    /* STORE VIEW STYLES */
-    html, body { min-height: 100%; }
-    body.index-page {
-      --idx-bg1: #0d0d1a; --idx-bg2: #131325; --idx-bg3: #0a0a18;
-      --idx-card: rgba(255,255,255,0.05); --idx-border: rgba(255,255,255,0.1);
-      --idx-text: #ffffff; --idx-text-muted: rgba(255,255,255,0.55);
-      --idx-footer: rgba(255,255,255,0.3); --idx-section-line: rgba(255,255,255,0.06);
-      background-color: #0d0d1a;
-      background-image:
-        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(255,107,53,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(100,80,200,0.1) 0%, transparent 55%),
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      background-attachment: fixed; min-height: 100vh;
-      font-family: 'Plus Jakarta Sans', sans-serif; color: var(--idx-text); overflow-x: hidden;
-    }
-    body.index-page[data-theme="white"] {
-      --idx-bg1: #f8f9ff; --idx-bg2: #eef0fa; --idx-bg3: #f0f2ff;
-      --idx-card: rgba(255,255,255,0.75); --idx-border: rgba(0,0,0,0.08);
-      --idx-text: #111827; --idx-text-muted: rgba(17,24,39,0.55);
-      --idx-footer: rgba(17,24,39,0.4); --idx-section-line: rgba(0,0,0,0.07);
-      background-color: #f0f2ff;
-      background-image:
-        radial-gradient(ellipse 70% 50% at 15% 10%, rgba(255,107,53,0.08) 0%, transparent 55%),
-        radial-gradient(ellipse 60% 45% at 85% 85%, rgba(120,100,255,0.07) 0%, transparent 55%);
-    }
-    body.index-page[data-theme="white"] .store-name,
-    body.index-page[data-theme="white"] .product-name { color: #111827; }
-    body.index-page[data-theme="white"] .section-title { color: rgba(17,24,39,0.5); }
-    body.index-page[data-theme="white"] .theme-switcher { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.1); }
-    body.index-page[data-theme="white"] .theme-pill { color: rgba(0,0,0,0.5); }
-    body.index-page[data-theme="white"] .theme-pill:hover { color: rgba(0,0,0,0.8); }
-    body.index-page[data-theme="white"] .theme-pill.active { background: rgba(0,0,0,0.1); color: #111827; }
-    body.index-page[data-theme="white"] .share-btn { background: rgba(0,0,0,0.07); border-color: rgba(0,0,0,0.1); color: #111827; }
-    body.index-page[data-theme="white"] .product-card { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.08); }
-    body.index-page[data-theme="white"] .footer { color: rgba(17,24,39,0.4); border-color: rgba(0,0,0,0.07); }
-    body.index-page[data-theme="white"] .footer-brand { color: rgba(17,24,39,0.5); }
-
-    .store-view { display: none; }
-    .store-view.active { display: block; }
-
-    .index-page .container { max-width: 480px; margin: 0 auto; padding: 24px 16px 140px; }
-    .index-page .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .index-page .share-btn {
-      width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
-      background: rgba(255,255,255,0.08); border: 1px solid var(--idx-border);
-      backdrop-filter: blur(10px); border-radius: 14px; color: var(--idx-text); cursor: pointer; transition: all 0.3s ease;
-    }
-    .index-page .share-btn:hover { background: rgba(255,255,255,0.15); }
-    .index-page .share-btn:active { transform: scale(0.9); }
-
-    .theme-switcher { display: flex; gap: 4px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(16px); border-radius: 50px; padding: 4px; }
-    .theme-pill { display: flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 50px; border: none; background: transparent; color: rgba(255,255,255,0.55); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; }
-    .theme-pill:hover { color: rgba(255,255,255,0.85); }
-    .theme-pill.active { background: rgba(255,255,255,0.18); color: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-
-    .index-page .hero { text-align: center; margin-bottom: 36px; }
-    .index-page .logo-wrapper {
-      width: 120px; height: 120px; border-radius: 50%; padding: 3px;
-      background: linear-gradient(270deg, #FF6B35, #FFD700, #FF6B35); background-size: 400% 400%;
-      animation: rotateBorder 3s ease infinite; margin: 0 auto 18px;
-      box-shadow: 0 0 40px rgba(255,107,53,0.3);
-    }
-    .index-page .logo-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--idx-bg2); animation: float 3s ease-in-out infinite; background-color: var(--idx-bg3); transition: border-color 0.4s; }
-    .index-page .store-name { font-size: 24px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; color: var(--idx-text); }
-    .index-page .store-desc { color: var(--idx-text-muted); font-size: 14px; line-height: 1.6; max-width: 300px; margin: 0 auto; }
-
-    .index-page .section-header { margin-bottom: 14px; }
-    .index-page .section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: var(--idx-text-muted); display: block; }
-    .index-page .section-title::after { content: ''; display: block; width: 32px; height: 2px; background: linear-gradient(90deg, #FF6B35, #FFD700); border-radius: 2px; margin-top: 7px; }
-    .index-page .platform-section { margin-bottom: 28px; }
-    .index-page .catalog-section { margin-bottom: 28px; }
-
-    .index-page .platform-btn {
-      display: flex; align-items: center; gap: 14px; width: 100%; padding: 15px 18px;
-      border-radius: 18px; border: none; color: white; font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; margin-bottom: 10px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-      position: relative; overflow: hidden;
-    }
-    .index-page .platform-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.35); }
-    .index-page .platform-btn:active { transform: translateY(-1px); }
-    .index-page .platform-btn::after { content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); transition: left 0.5s; }
-    .index-page .platform-btn:hover::after { left: 150%; }
-    .index-page .wa-btn { background: linear-gradient(135deg, #25D366, #128C7E); }
-    .index-page .shopee-btn { background: linear-gradient(135deg, #EE4D2D, #FF6633); }
-    .index-page .tokped-btn { background: linear-gradient(135deg, #03AC0E, #028a0b); }
-    .index-page .platform-btn-arrow { margin-left: auto; opacity: 0.6; transition: transform 0.2s, opacity 0.2s; }
-    .index-page .platform-btn:hover .platform-btn-arrow { transform: translateX(3px); opacity: 1; }
-    .index-page .icon-box { width: 38px; height: 38px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-
-    .index-page .product-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
-    .index-page .product-card { background: var(--idx-card); backdrop-filter: blur(10px); border: 1px solid var(--idx-border); border-radius: 18px; overflow: hidden; transition: transform 0.25s ease, box-shadow 0.25s ease; text-decoration: none; color: var(--idx-text); }
-    .index-page .product-card:hover { transform: scale(1.03); box-shadow: 0 12px 28px rgba(0,0,0,0.35); }
-    .index-page .product-img { width: 100%; height: 155px; object-fit: cover; background-color: var(--idx-bg2); display: block; }
-    .index-page .product-info { padding: 12px; }
-    .index-page .product-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--idx-text); }
-    .index-page .product-price { font-size: 14px; font-weight: 800; color: #FF6B35; background: rgba(255,107,53,0.1); display: inline-block; padding: 3px 8px; border-radius: 7px; }
-    .index-page .skeleton-box { background: var(--idx-card); border: 1px solid var(--idx-border); border-radius: 18px; overflow: hidden; }
-
-    .index-page .footer { text-align: center; padding: 24px 0 16px; margin-top: 32px; border-top: 1px solid var(--idx-section-line); font-size: 12px; color: var(--idx-footer); }
-    .index-page .footer-brand { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.6; color: var(--idx-footer); font-weight: 700; }
-    .index-page .footer-brand img { width: 16px; height: 16px; border-radius: 4px; opacity: 0.7; }
-    .index-page .footer-copy { font-size: 11px; opacity: 0.5; margin-top: 4px; }
-
-    .index-page .floating-wa { position: fixed; bottom: 24px; right: 24px; width: 58px; height: 58px; background: linear-gradient(135deg, #25D366, #128C7E); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 28px rgba(37,211,102,0.45); z-index: 99; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); }
-    .index-page .floating-wa:hover { transform: scale(1.1); }
-    .index-page .floating-wa:active { transform: scale(0.9); }
-
-    /* ──── LANDING PAGE ──── */
-    #landing-page {
-      display: none;
-      min-height: 100vh;
-      flex-direction: column;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-    .landing-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 24px 40px; }
-    .landing-logo {
-      width: 88px; height: 88px;
-      background: linear-gradient(135deg, #FF6B35, #FFD700);
-      border-radius: 24px;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 32px;
-      box-shadow: 0 0 60px rgba(255,107,53,0.4);
-      animation: landingPulse 2.5s ease-in-out infinite;
-      font-size: 44px; font-weight: 900; color: white; line-height: 1;
-    }
-    @keyframes landingPulse { 0%,100%{box-shadow:0 0 40px rgba(255,107,53,0.3)} 50%{box-shadow:0 0 80px rgba(255,107,53,0.6)} }
-    .landing-wordmark { font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 4px; }
-    .landing-wordmark span { background: linear-gradient(135deg, #FF6B35, #FFD700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .landing-title { font-size: clamp(32px, 7vw, 52px); font-weight: 900; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px; }
-    .landing-subtitle { font-size: 15px; color: rgba(255,255,255,0.5); max-width: 320px; line-height: 1.7; margin: 0 auto 40px; }
-    .landing-actions { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 300px; }
-    .landing-btn-primary {
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      padding: 16px 24px; background: linear-gradient(135deg, #FF6B35, #FF8C35);
-      border-radius: 16px; color: white; font-weight: 800; font-size: 15px;
-      text-decoration: none; border: none; cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
-      box-shadow: 0 8px 32px rgba(255,107,53,0.4);
-      font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.3px;
-    }
-    .landing-btn-primary:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 40px rgba(255,107,53,0.5); }
-    .landing-btn-secondary {
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      padding: 16px 24px; background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.13); backdrop-filter: blur(10px);
-      border-radius: 16px; color: rgba(255,255,255,0.8); font-weight: 700;
-      font-size: 15px; text-decoration: none; cursor: pointer;
-      transition: all 0.2s ease; font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-    .landing-btn-secondary:hover { background: rgba(255,255,255,0.12); color: white; border-color: rgba(255,255,255,0.2); }
-    .landing-features { display: flex; gap: 10px; margin-top: 48px; flex-wrap: wrap; justify-content: center; }
-    .feature-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 50px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); }
-    .feature-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: #FF6B35; flex-shrink: 0; }
-    .landing-footer { text-align: center; padding: 20px; font-size: 11px; color: rgba(255,255,255,0.2); font-weight: 600; letter-spacing: 0.5px; }
-
-    @keyframes rotateBorder { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-    @keyframes float { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-8px)} }
-    .fade-up { opacity: 0; transform: translateY(20px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); }
-    .fade-up.show { opacity: 1; transform: translateY(0); }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/index.css">
 </head>
-<body class="index-page">
+<body>
+  <div class="container">
 
-  <!-- LANDING PAGE (tampil jika tidak ada ?uid=) -->
-  <div id="landing-page">
-    <div class="landing-hero">
-      <div class="landing-logo">L</div>
-      <div class="landing-wordmark">LINK<span>ify</span></div>
-      <h1 class="landing-title">Satu Link<br>untuk Semua Platform</h1>
-      <p class="landing-subtitle">Buat halaman link bio toko online kamu. Hubungkan WhatsApp, Shopee & Tokopedia dengan mudah.</p>
-      <div class="landing-actions">
-        <a href="admin-daftar.html" class="landing-btn-primary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-          Daftar Sekarang — Gratis
-        </a>
-        <a href="login-user.html" class="landing-btn-secondary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-          Masuk ke Toko Saya
-        </a>
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="theme-wrap">
+        <button class="theme-pill active" data-t="dark" onclick="setTheme('dark')">🌙 Midnight</button>
+        <button class="theme-pill" data-t="white" onclick="setTheme('white')">☀️ White</button>
       </div>
-      <div class="landing-features">
-        <div class="feature-chip"><span class="feature-chip-dot"></span>WhatsApp</div>
-        <div class="feature-chip"><span class="feature-chip-dot"></span>Shopee</div>
-        <div class="feature-chip"><span class="feature-chip-dot"></span>Tokopedia</div>
-        <div class="feature-chip"><span class="feature-chip-dot"></span>Katalog Produk</div>
-        <div class="feature-chip"><span class="feature-chip-dot"></span>100% Gratis</div>
-      </div>
-    </div>
-    <div class="landing-footer">© 2025 LINKify · Link Bio untuk Toko Online Indonesia</div>
-  </div>
-
-  <!-- STORE VIEW (tampil jika ada ?uid=) -->
-  <div class="store-view container">
-    <div class="top-bar">
-      <div class="theme-switcher" id="themeSwitcher">
-        <button class="theme-pill active" data-t="dark" onclick="setTheme('dark')" title="Midnight">
-          <span>🌙</span><span>Midnight</span>
-        </button>
-        <button class="theme-pill" data-t="white" onclick="setTheme('white')" title="White">
-          <span>☀️</span><span>White</span>
-        </button>
-      </div>
-      <button onclick="shareLink()" class="share-btn" title="Bagikan">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+      <button class="share-btn" onclick="shareLink()" aria-label="Bagikan">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
         </svg>
       </button>
     </div>
 
+    <!-- HERO -->
     <div class="hero fade-up">
-      <div class="logo-wrapper">
+      <div class="logo-ring">
         <img id="profileImg" src="https://placehold.co/200x200/1a1a2e/ffffff?text=Logo" alt="Logo" class="logo-img">
       </div>
-      <h1 id="username" class="store-name">Memuat...</h1>
-      <p id="bio" class="store-desc"></p>
+      <h1 id="storeName" class="store-name">Loading...</h1>
+      <p id="storeBio" class="store-desc"></p>
     </div>
 
-    <div class="platform-section fade-up">
-      <div class="section-header"><span class="section-title">Pemesanan & Platform</span></div>
-      <a id="link-wa-main" href="#" target="_blank" class="platform-btn wa-btn">
-        <div class="icon-box">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    <!-- PLATFORM -->
+    <div class="sec fade-up">
+      <div class="sec-head">
+        <span class="sec-label">Pemesanan & Platform</span>
+        <span class="section-line"></span>
+      </div>
+      <a id="link-wa" href="#" target="_blank" rel="noopener" class="plat-btn wa-btn">
+        <div class="plat-icon">
+          <svg viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         </div>
         Pesan Lewat WhatsApp
-        <svg class="platform-btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
-      <a id="link-shopee" href="#" target="_blank" class="platform-btn shopee-btn hidden">
-        <div class="icon-box">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M19.793 7.507c0-2.075-.828-3.952-2.168-5.308a.675.675 0 00-.95-.014.664.664 0 00-.013.944 6.506 6.506 0 011.8 4.378 6.501 6.501 0 01-6.504 6.487 6.499 6.499 0 01-6.5-6.487 6.497 6.497 0 011.8-4.378.664.664 0 00-.013-.944.675.675 0 00-.95.014A7.824 7.824 0 004.127 7.507c0 .332.022.659.063.98H2.672a1.354 1.354 0 00-1.348 1.214L.024 21.347A1.344 1.344 0 001.37 22.86h21.26a1.344 1.344 0 001.346-1.513l-1.3-11.626a1.354 1.354 0 00-1.348-1.214h-1.597a7.9 7.9 0 00.062-.98zM12 1.14a2.694 2.694 0 110 5.388A2.694 2.694 0 0112 1.14z"/></svg>
+      <a id="link-shopee" href="#" target="_blank" rel="noopener" class="plat-btn shopee-btn hidden">
+        <div class="plat-icon">
+          <svg viewBox="0 0 24 24" fill="white"><path d="M19.793 7.507c0-2.075-.828-3.952-2.168-5.308a.675.675 0 00-.95-.014.664.664 0 00-.013.944 6.506 6.506 0 011.8 4.378 6.501 6.501 0 01-6.504 6.487 6.499 6.499 0 01-6.5-6.487 6.497 6.497 0 011.8-4.378.664.664 0 00-.013-.944.675.675 0 00-.95.014A7.824 7.824 0 004.127 7.507c0 .332.022.659.063.98H2.672a1.354 1.354 0 00-1.348 1.214L.024 21.347A1.344 1.344 0 001.37 22.86h21.26a1.344 1.344 0 001.346-1.513l-1.3-11.626a1.354 1.354 0 00-1.348-1.214h-1.597a7.9 7.9 0 00.062-.98zM12 1.14a2.694 2.694 0 110 5.388A2.694 2.694 0 0112 1.14z"/></svg>
         </div>
         Pesan Lewat Shopee
-        <svg class="platform-btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
-      <a id="link-tokped" href="#" target="_blank" class="platform-btn tokped-btn">
-        <div class="icon-box">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M21 7H3a1 1 0 00-1 1v11a2 2 0 002 2h16a2 2 0 002-2V8a1 1 0 00-1-1zm-9 9a3 3 0 110-6 3 3 0 010 6z"/><path d="M8 7V5a4 4 0 018 0v2"/></svg>
+      <a id="link-tokped" href="#" target="_blank" rel="noopener" class="plat-btn tokped-btn hidden">
+        <div class="plat-icon">
+          <svg viewBox="0 0 24 24" fill="white"><path d="M21 7H3a1 1 0 00-1 1v11a2 2 0 002 2h16a2 2 0 002-2V8a1 1 0 00-1-1zm-9 9a3 3 0 110-6 3 3 0 010 6z"/><path d="M8 7V5a4 4 0 018 0v2"/></svg>
         </div>
         Pesan Lewat Tokopedia
-        <svg class="platform-btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
     </div>
 
-    <div class="catalog-section">
-      <div class="section-header"><span class="section-title">Katalog Produk</span></div>
-      <div id="productList" class="product-grid">
-        <div class="skeleton-box">
-          <div class="skeleton" style="height:155px;border-radius:18px 18px 0 0;"></div>
-          <div style="padding:12px;"><div class="skeleton" style="height:13px;width:80%;margin-bottom:8px;border-radius:6px;"></div><div class="skeleton" style="height:22px;width:45%;border-radius:7px;"></div></div>
-        </div>
-        <div class="skeleton-box">
-          <div class="skeleton" style="height:155px;border-radius:18px 18px 0 0;"></div>
-          <div style="padding:12px;"><div class="skeleton" style="height:13px;width:60%;margin-bottom:8px;border-radius:6px;"></div><div class="skeleton" style="height:22px;width:40%;border-radius:7px;"></div></div>
-        </div>
+    <!-- KATALOG -->
+    <div class="sec">
+      <div class="sec-head">
+        <span class="sec-label">Katalog Produk</span>
+        <span class="section-line"></span>
+      </div>
+      <div id="productList" class="prod-grid">
+        <div class="skel-box"><div class="skel" style="height:155px"></div><div style="padding:12px"><div class="skel" style="height:12px;width:75%;margin-bottom:8px;border-radius:4px"></div><div class="skel" style="height:20px;width:50%;border-radius:4px"></div></div></div>
+        <div class="skel-box"><div class="skel" style="height:155px"></div><div style="padding:12px"><div class="skel" style="height:12px;width:60%;margin-bottom:8px;border-radius:4px"></div><div class="skel" style="height:20px;width:45%;border-radius:4px"></div></div></div>
       </div>
     </div>
 
+    <!-- FOOTER -->
     <div class="footer">
-      <p id="footer-store">© 2025 My Store</p>
-      <div class="footer-brand"><img src="logo-linkify.png" alt="LINKify"> Powered by LINKify</div>
+      <p class="footer-store" id="footerStore">© 2025 My Store</p>
+      <div class="footer-brand">
+        <img src="logo-linkify.png" alt="LINKify">
+        Powered by LINKify
+      </div>
       <p class="footer-copy">© 2025 LINKify. All rights reserved.</p>
     </div>
   </div>
 
-  <a id="waBtn" href="#" target="_blank" rel="noopener noreferrer" data-wa="" class="floating-wa" style="display:none;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  <!-- FLOATING WA -->
+  <a id="floatWa" href="#" target="_blank" rel="noopener" class="float-wa">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
   </a>
 
+  <!-- THEME + SHARE SCRIPT -->
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const HAS_UID = !!urlParams.get('uid');
-    if (!HAS_UID) {
-      document.getElementById('landing-page').style.display = 'flex';
-      document.getElementById('landing-page').style.flexDirection = 'column';
-    } else {
-      document.querySelector('.store-view').classList.add('active');
-      document.getElementById('waBtn').style.display = 'flex';
-    }
     function setTheme(t) {
-      document.body.setAttribute('data-theme', t);
+      const isWhite = t === 'white';
+      document.body.setAttribute('data-theme', isWhite ? 'white' : '');
       localStorage.setItem('lf-theme', t);
-      document.querySelectorAll('.theme-pill').forEach(d => d.classList.toggle('active', d.dataset.t === t));
+      document.querySelectorAll('.theme-pill').forEach(p => p.classList.toggle('active', p.dataset.t===t));
+      // FIX: sync html background color agar tidak ada celah putih/gelap saat scroll ke bawah
+      document.documentElement.style.backgroundColor = isWhite ? '#f0f2ff' : '#0d0d1a';
+      // Sync border logo
+      const logoEl = document.querySelector('.logo-img');
+      if (logoEl) logoEl.style.borderColor = isWhite ? '#e8ecfb' : '#0d0d1a';
     }
-    const validThemes = ['dark','white'];
-    const savedTheme = validThemes.includes(localStorage.getItem('lf-theme')) ? localStorage.getItem('lf-theme') : 'dark';
-    setTheme(savedTheme);
-    window.shareLink = () => {
-      const title = document.getElementById('username')?.innerText || 'Toko';
-      if (navigator.share) { navigator.share({ title, url: window.location.href }); }
-      else { navigator.clipboard.writeText(window.location.href).then(() => alert('Link berhasil disalin!')).catch(() => alert('Gagal menyalin link.')); }
-    };
+    const saved = localStorage.getItem('lf-theme') || 'dark';
+    setTheme(saved);
+
+    function shareLink() {
+      const name = document.getElementById('storeName')?.textContent || 'Toko';
+      if (navigator.share) { navigator.share({ title: name, url: location.href }); }
+      else { navigator.clipboard.writeText(location.href).then(() => alert('Link disalin!')); }
+    }
+
+    // Scroll animations
+    const obs = new IntersectionObserver(entries =>
+      entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('show'); }), { threshold: 0.08 });
+    document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
   </script>
+
   <script type="module" src="js/script.js"></script>
 </body>
 </html>
