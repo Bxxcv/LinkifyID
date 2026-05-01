@@ -3,365 +3,275 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CP Panel — LINKify Admin</title>
-  <link rel="icon" href="logo-linkify.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/cp-panel.css">
-</head>
-<body>
-<div id="overlay" class="overlay"></div>
-<div id="toast"></div>
-
-<!-- SIDEBAR -->
-<nav class="sidebar" id="sidebar">
-  <div class="sb-top">
-    <div class="sb-brand">
-      <div class="sb-logo">
-        <img src="logo-linkify.png" alt="L" onerror="this.parentElement.innerHTML='<b style=color:#fff>L</b>'">
-      </div>
-      <div class="sb-name">LINK<span>ify</span></div>
-    </div>
-  </div>
-  <div class="sb-nav">
-    <div class="sb-label">CP Panel</div>
-    <button class="sb-btn active" data-tab="users">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-      Manajemen User
-    </button>
-    <hr class="sb-divider">
-    <a href="admin.html" class="sb-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Dashboard Toko
-    </a>
-    <hr class="sb-divider">
-    <button class="sb-btn danger" id="btn-logout">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      Logout
-    </button>
-  </div>
-  <div class="sb-bottom"><div class="sb-copy">LINKify CP Panel © 2025</div></div>
-</nav>
-
-<!-- MAIN -->
-<div class="main">
-  <div class="topbar">
-    <div class="topbar-left">
-      <button class="hamburger" id="btn-hamburger">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-      <span class="topbar-title">CP Panel — Manajemen User</span>
-    </div>
-    <div class="badge-time" id="jam">--:--</div>
-  </div>
-
-  <div class="content">
-
-    <!-- HALAMAN LOGIN -->
-    <div id="page-login" class="page active">
-      <div class="login-wrap">
-        <div class="login-card">
-          <div class="login-logo">
-            <img src="logo-linkify.png" alt="L" onerror="this.parentElement.innerHTML='<b style=color:#fff;font-size:18px>L</b>'">
-          </div>
-          <h2>Login Admin</h2>
-          <p>Akses khusus untuk administrator LINKify</p>
-          <div class="f-group">
-            <label class="f-label">Email Admin</label>
-            <input id="adminEmail" type="email" class="f-input" placeholder="admin@email.com" autocomplete="email">
-          </div>
-          <div class="f-group">
-            <label class="f-label">Password</label>
-            <input id="adminPass" type="password" class="f-input" placeholder="••••••••" autocomplete="current-password">
-          </div>
-          <button class="btn btn-dark btn-full" id="btnLogin">Masuk sebagai Admin</button>
-          <div class="err-msg" id="loginErr"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- HALAMAN DASHBOARD -->
-    <div id="page-dashboard" class="page">
-
-      <!-- STATS -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
-          <div class="stat-label">Total User</div>
-          <div class="stat-val" id="st-total">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-          <div class="stat-label">User Aktif</div>
-          <div class="stat-val" id="st-aktif">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-          <div class="stat-label">Diblokir</div>
-          <div class="stat-val" id="st-blokir">0</div>
-        </div>
-      </div>
-
-      <!-- FORM TAMBAH USER -->
-      <div class="add-card">
-        <h3>➕ Daftarkan User / Toko Baru</h3>
-        <div class="add-grid">
-          <div class="f-group" style="margin:0">
-            <label class="f-label">Nama Toko</label>
-            <input id="in-nama" type="text" class="f-input" placeholder="Nama Toko">
-          </div>
-          <div class="f-group" style="margin:0">
-            <label class="f-label">Nama Pemilik</label>
-            <input id="in-pemilik" type="text" class="f-input" placeholder="Nama Pemilik">
-          </div>
-          <div class="f-group" style="margin:0">
-            <label class="f-label">Email</label>
-            <input id="in-email" type="email" class="f-input" placeholder="email@toko.com">
-          </div>
-          <div class="f-group" style="margin:0">
-            <label class="f-label">Password</label>
-            <input id="in-pass" type="password" class="f-input" placeholder="Min 6 karakter">
-          </div>
-          <button class="btn btn-dark" id="btnDaftar" style="height:42px;white-space:nowrap">+ Daftarkan</button>
-        </div>
-      </div>
-
-      <!-- TABEL USER -->
-      <div class="table-card">
-        <div class="table-head">
-          <h3>Daftar User Terdaftar</h3>
-          <button class="refresh-btn" onclick="loadUsers()">↻ Refresh</button>
-        </div>
-        <div style="overflow-x:auto">
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>Nama Toko</th>
-                <th>Pemilik</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="tabelUser">
-              <tr><td colspan="6" class="empty-row">Memuat data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div><!-- /page-dashboard -->
-  </div><!-- /content -->
-</div><!-- /main -->
-
-<script type="module">
-  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-    signOut, onAuthStateChanged, browserLocalPersistence, setPersistence
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import {
-    getFirestore, doc, setDoc, getDocs, collection,
-    updateDoc, deleteDoc, query, orderBy, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { CONFIG } from './js/config.js';
-
-  const EMAIL_ADMIN = CONFIG.adminEmail;
-  const app  = getApps().length ? getApp() : initializeApp(CONFIG.firebase);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
-  await setPersistence(auth, browserLocalPersistence).catch(()=>{});
-
-  const $ = id => document.getElementById(id);
-  const sidebar = $('sidebar');
-  const overlay = $('overlay');
-  let isLoggingOut = false;
-
-  // ── CLOCK ───────────────────────────────────────────────────
-  setInterval(() => {
-    $('jam').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-  }, 1000);
-  $('jam').textContent = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-
-  // ── SIDEBAR ─────────────────────────────────────────────────
-  const closeSB = () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); };
-  $('btn-hamburger').addEventListener('click', () => { sidebar.classList.add('open'); overlay.classList.add('show'); });
-  overlay.addEventListener('click', closeSB);
-
-  // ── TOAST ───────────────────────────────────────────────────
-  let _tt;
-  function toast(msg, type='ok') {
-    const el = $('toast');
-    el.textContent = msg;
-    el.style.background = type==='ok' ? '#111' : type==='err' ? '#EF4444' : '#F59E0B';
-    el.classList.add('show');
-    clearTimeout(_tt);
-    _tt = setTimeout(() => el.classList.remove('show'), 3000);
-  }
-
-  // ── AUTH STATE ──────────────────────────────────────────────
-  onAuthStateChanged(auth, user => {
-    if (isLoggingOut) return;
-    if (user && user.email === EMAIL_ADMIN) {
-      $('page-login').classList.remove('active');
-      $('page-dashboard').classList.add('active');
-      loadUsers();
-    } else {
-      $('page-login').classList.add('active');
-      $('page-dashboard').classList.remove('active');
-      if (user) {
-        toast('Bukan akun admin!', 'err');
-        isLoggingOut = true;
-        signOut(auth).finally(() => isLoggingOut = false);
+  <title>LINKify Admin — Manajemen User</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="logo-linkify.png">
+  <link rel="stylesheet" href="css/admin-daftar.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'lf-dark':  '#1A1D21',
+            'lf-card':  '#22262C',
+            'lf-border':'#2E3340',
+            'lf-orange': '#EE4D2D',
+            'lf-orange-hover': '#D74121',
+          }
+        }
       }
     }
-  });
+  </script>
+</head>
+<body class="bg-lf-dark text-slate-100 min-h-screen">
 
-  // ── LOGIN ───────────────────────────────────────────────────
-  $('btnLogin').addEventListener('click', async () => {
-    const email = $('adminEmail').value.trim();
-    const pass  = $('adminPass').value;
-    const errEl = $('loginErr');
-    errEl.textContent = '';
+  <!-- OVERLAY mobile sidebar -->
+  <div id="overlay" class="fixed inset-0 bg-black/60 z-20 hidden md:hidden" onclick="closeSidebar()"></div>
 
-    if (!email || !pass) { errEl.textContent = 'Email dan password wajib diisi!'; return; }
-    $('btnLogin').disabled = true;
-    $('btnLogin').textContent = 'Masuk...';
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch(e) {
-      const map = {
-        'auth/wrong-password':'Password salah!',
-        'auth/user-not-found':'Email tidak terdaftar!',
-        'auth/invalid-credential':'Email atau password salah!',
-        'auth/too-many-requests':'Terlalu banyak percobaan. Coba lagi nanti.',
-      };
-      errEl.textContent = map[e.code] || e.message;
-      $('btnLogin').disabled = false;
-      $('btnLogin').textContent = 'Masuk sebagai Admin';
-    }
-  });
-  document.addEventListener('keydown', e => { if(e.key==='Enter' && $('page-login').classList.contains('active')) $('btnLogin').click(); });
+  <!-- CONFIRM MODAL -->
+  <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="bg-lf-card border border-lf-border rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+      <div id="confirm-icon" class="w-11 h-11 rounded-full flex items-center justify-center mx-auto mb-4"></div>
+      <h3 id="confirm-title" class="text-white font-bold text-base text-center mb-2"></h3>
+      <p id="confirm-msg" class="text-slate-400 text-sm text-center mb-6 leading-relaxed"></p>
+      <div class="flex gap-3">
+        <button onclick="closeConfirm()" class="flex-1 py-2.5 rounded-xl border border-lf-border text-slate-300 font-semibold text-sm hover:bg-slate-700 transition">Batal</button>
+        <button id="confirm-ok" class="flex-1 py-2.5 rounded-xl font-semibold text-sm transition"></button>
+      </div>
+    </div>
+  </div>
 
-  // ── LOGOUT ──────────────────────────────────────────────────
-  $('btn-logout').addEventListener('click', () => {
-    if (confirm('Yakin mau logout?')) signOut(auth);
-  });
+  <!-- PREMIUM MODAL -->
+  <div id="premium-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="bg-lf-card border border-lf-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <h3 class="text-white font-bold text-base mb-5 flex items-center gap-2">
+        <span class="text-yellow-400">⭐</span> Atur Premium User
+      </h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Durasi (hari)</label>
+          <input id="pm-days" type="number" value="30" min="1" max="365"
+            class="w-full bg-slate-800 border border-lf-border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-lf-orange transition">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">Warna Aksen</label>
+          <div class="flex gap-2 flex-wrap" id="pm-colors">
+            <button data-c="#FF6B35" class="pm-col w-8 h-8 rounded-full border-2 border-transparent hover:scale-110 transition-transform" style="background:#FF6B35" title="Oranye"></button>
+            <button data-c="#EE4D2D" class="pm-col w-8 h-8 rounded-full border-2 border-transparent hover:scale-110 transition-transform" style="background:#EE4D2D" title="Merah"></button>
+            <button data-c="#25D366" class="pm-col w-8 h-8 rounded-full border-2 border-transparent hover:scale-110 transition-transform" style="background:#25D366" title="Hijau"></button>
+            <button data-c="#3B82F6" class="pm-col w-8 h-8 rounded-full border-2 border-transparent hover:scale-110 transition-transform" style="background:#3B82F6" title="Biru"></button>
+            <button data-c="#8B5CF6" class="pm-col w-8 h-8 rounded-full border-2 border-transparent hover:scale-110 transition-transform" style="background:#8B5CF6" title="Ungu"></button>
+            <button data-c="#EC4899" class="pm-col w-8 h-8 rounded-full border-2 border-transparent hover:scale-110 transition-transform" style="background:#EC4899" title="Pink"></button>
+            <button data-c="#F59E0B" class="pm-col w-8 h-8 rounded-full border-2 border-transparent hover:scale-110 transition-transform" style="background:#F59E0B" title="Kuning"></button>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Template Tema</label>
+          <select id="pm-template" class="w-full bg-slate-800 border border-lf-border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-lf-orange transition">
+            <option value="default">🌃 Midnight City</option>
+            <option value="forest">🌲 Dark Forest</option>
+            <option value="ocean">🌊 Deep Ocean</option>
+            <option value="aurora">🌌 Aurora Night</option>
+            <option value="desert">🏜️ Golden Desert</option>
+            <option value="sakura">🌸 Sakura Bloom</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">Custom Slug (opsional)</label>
+          <div class="flex items-center gap-2 bg-slate-800 border border-lf-border rounded-xl px-4 py-2.5">
+            <span class="text-slate-500 text-xs whitespace-nowrap">linkify.app/</span>
+            <input id="pm-slug" type="text" placeholder="nama-toko" class="flex-1 bg-transparent text-white text-sm focus:outline-none placeholder-slate-600">
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="closePremiumModal()" class="flex-1 py-2.5 rounded-xl border border-lf-border text-slate-300 font-semibold text-sm hover:bg-slate-700 transition">Batal</button>
+        <button id="pm-save-btn" class="flex-1 py-2.5 rounded-xl bg-lf-orange hover:bg-lf-orange-hover text-white font-bold text-sm transition-all active:scale-95">Aktifkan ⭐</button>
+      </div>
+    </div>
+  </div>
 
-  // ── LOAD USERS ──────────────────────────────────────────────
-  window.loadUsers = async function() {
-    const tbody = $('tabelUser');
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Memuat data...</td></tr>`;
-    try {
-      const q    = query(collection(db,'toko'), orderBy('dibuatPada','desc'));
-      const snap = await getDocs(q);
-      let total=0, aktif=0, blokir=0, rows='', no=1;
+  <div class="flex h-screen overflow-hidden">
 
-      snap.forEach(ds => {
-        const d=ds.data(), uid=ds.id;
-        if (!d.email) return; // skip non-user docs
-        total++;
-        if (d.status==='blokir') blokir++;
-        else aktif++;
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="bg-lf-card border-r border-lf-border w-64 py-5 px-3 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out z-30 flex flex-col">
+      <div class="flex items-center gap-3 px-3 pb-5 border-b border-lf-border">
+        <img src="logo-linkify.png" alt="LF" class="w-8 h-8 rounded-lg">
+        <div>
+          <span class="text-base font-black text-white tracking-tight">LINKify</span>
+          <span class="block text-[10px] text-slate-600 uppercase tracking-widest">Admin Panel</span>
+        </div>
+      </div>
 
-        const base = window.location.origin + (window.location.hostname.includes('github.io') ? '/LINKify' : '');
-        const linkToko = `${base}/index.html?uid=${uid}`;
+      <nav class="flex-1 pt-4 space-y-0.5">
+        <a href="admin.html" class="flex items-center py-2.5 px-3 rounded-xl text-slate-400 hover:bg-slate-700/40 hover:text-white transition-all text-sm">
+          <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard Toko
+        </a>
+        <a href="admin-daftar.html" class="flex items-center py-2.5 px-3 rounded-xl bg-lf-orange text-white font-semibold text-sm">
+          <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          Manajemen User
+        </a>
+      </nav>
 
-        rows += `<tr>
-          <td>${no++}</td>
-          <td style="font-weight:600">${escHtml(d.namaToko)}</td>
-          <td>${escHtml(d.pemilik||'-')}</td>
-          <td style="color:#666;font-size:12px">${escHtml(d.email)}</td>
-          <td><span class="badge ${d.status==='blokir'?'badge-red':'badge-green'}">${d.status==='blokir'?'Diblokir':'Aktif'}</span></td>
-          <td>
-            <a href="${linkToko}" target="_blank" class="act-link act-view">Lihat</a>
-            ${d.status==='blokir'
-              ? `<button onclick="ubahStatus('${uid}','aktif')" class="act-link act-aktif">Aktifkan</button>`
-              : `<button onclick="ubahStatus('${uid}','blokir')" class="act-link act-blokir">Blokir</button>`}
-            <button onclick="hapusUser('${uid}','${escHtml(d.namaToko)}')" class="act-link act-hapus">Hapus</button>
-          </td>
-        </tr>`;
-      });
+      <div class="border-t border-lf-border pt-4">
+        <p id="adminYgLogin" class="text-xs text-slate-600 mb-3 px-3 truncate"></p>
+        <button onclick="logoutAdmin()" class="w-full flex items-center py-2.5 px-3 rounded-xl text-red-400 hover:bg-red-500/10 transition text-sm">
+          <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Logout
+        </button>
+      </div>
+    </aside>
 
-      $('st-total').textContent  = total;
-      $('st-aktif').textContent  = aktif;
-      $('st-blokir').textContent = blokir;
-      tbody.innerHTML = rows || `<tr><td colspan="6" class="empty-row">Belum ada user terdaftar</td></tr>`;
-    } catch(e) {
-      tbody.innerHTML = `<tr><td colspan="6" class="empty-row" style="color:#EF4444">Gagal memuat: ${e.message}</td></tr>`;
-    }
-  };
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col overflow-hidden">
 
-  // ── DAFTARKAN USER ──────────────────────────────────────────
-  $('btnDaftar').addEventListener('click', async () => {
-    const nama    = $('in-nama').value.trim();
-    const pemilik = $('in-pemilik').value.trim();
-    const email   = $('in-email').value.trim();
-    const pass    = $('in-pass').value;
-    const btn     = $('btnDaftar');
+      <!-- TOPBAR -->
+      <header class="bg-lf-card border-b border-lf-border px-4 py-3 flex items-center justify-between flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <button id="hamburger" class="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <h1 class="text-sm font-bold text-white">Manajemen User</h1>
+        </div>
+        <div id="jam" class="font-mono text-xs bg-slate-800/80 text-slate-300 px-3 py-1.5 rounded-lg border border-lf-border">--:-- WIB</div>
+      </header>
 
-    if (!nama||!pemilik||!email||!pass) return toast('Isi semua field terlebih dahulu!','warn');
-    if (pass.length < 6) return toast('Password minimal 6 karakter!','warn');
+      <main class="flex-1 overflow-x-hidden overflow-y-auto">
 
-    btn.disabled=true; btn.textContent='Mendaftarkan...';
+        <!-- ── LOGIN ── -->
+        <div id="loginAdmin" class="p-6 flex items-center justify-center min-h-full">
+          <div class="w-full max-w-sm">
+            <div class="text-center mb-8">
+              <div class="w-14 h-14 bg-lf-orange rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-500/20">
+                <img src="logo-linkify.png" alt="LF" class="w-9 h-9 rounded-xl">
+              </div>
+              <h2 class="text-xl font-black text-white">Admin Login</h2>
+              <p class="text-slate-500 text-xs mt-1">LINKify Control Panel</p>
+            </div>
+            <div class="bg-lf-card border border-lf-border rounded-2xl p-5 space-y-3">
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Email Admin</label>
+                <input id="adminEmail" type="email" autocomplete="email" placeholder="admin@linkify.app"
+                  class="w-full bg-slate-800 border border-lf-border rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-lf-orange transition">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-500 mb-1">Password</label>
+                <input id="adminPass" type="password" autocomplete="current-password" placeholder="••••••••"
+                  class="w-full bg-slate-800 border border-lf-border rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-lf-orange transition">
+              </div>
+              <button type="button" onclick="loginAdmin()"
+                class="w-full bg-lf-orange hover:bg-lf-orange-hover text-white py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 mt-1">
+                Masuk sebagai Admin
+              </button>
+              <p id="loginError" class="text-red-400 text-xs text-center hidden"></p>
+            </div>
+          </div>
+        </div>
 
-    // Secondary app — admin tidak ikut logout
-    const secName = 'sec-' + Date.now();
-    const secApp  = initializeApp(CONFIG.firebase, secName);
-    const secAuth = getAuth(secApp);
-    try {
-      const cred = await createUserWithEmailAndPassword(secAuth, email, pass);
-      const uid  = cred.user.uid;
-      await setDoc(doc(db,'toko',uid), {
-        namaToko:   nama,
-        pemilik:    pemilik,
-        email:      email,
-        status:     'aktif',
-        dibuatPada: serverTimestamp()
-      });
-      toast(`User "${nama}" berhasil didaftarkan! ✅`);
-      $('in-nama').value=$('in-pemilik').value=$('in-email').value=$('in-pass').value='';
-      loadUsers();
-    } catch(e) {
-      const map = {
-        'auth/email-already-in-use': 'Email sudah terdaftar!',
-        'auth/invalid-email':        'Format email tidak valid!',
-      };
-      toast(map[e.code]||'Gagal: '+e.message, 'err');
-    } finally {
-      await signOut(secAuth).catch(()=>{});
-      btn.disabled=false; btn.textContent='+ Daftarkan';
-    }
-  });
+        <!-- ── DASHBOARD ── -->
+        <div id="formDaftar" class="p-4 md:p-6 space-y-5" style="display:none;">
 
-  // ── UBAH STATUS ─────────────────────────────────────────────
-  window.ubahStatus = async (uid, status) => {
-    if (!confirm(`Yakin mau ${status==='blokir'?'memblokir':'mengaktifkan'} user ini?`)) return;
-    try {
-      await updateDoc(doc(db,'toko',uid), { status });
-      toast(status==='blokir' ? 'User diblokir' : 'User diaktifkan');
-      loadUsers();
-    } catch(e) { toast('Gagal: '+e.message,'err'); }
-  };
+          <!-- ANALYTICS SUMMARY CARDS -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-lf-card border border-lf-border rounded-2xl p-4">
+              <p class="text-xs text-slate-500 font-semibold uppercase tracking-wide mb-2">Total User</p>
+              <p id="totalUser" class="text-2xl font-black text-white">0</p>
+              <div class="w-6 h-1 bg-blue-500 rounded-full mt-2 opacity-60"></div>
+            </div>
+            <div class="bg-lf-card border border-lf-border rounded-2xl p-4">
+              <p class="text-xs text-slate-500 font-semibold uppercase tracking-wide mb-2">User Aktif</p>
+              <p id="totalAktif" class="text-2xl font-black text-emerald-400">0</p>
+              <div class="w-6 h-1 bg-emerald-500 rounded-full mt-2 opacity-60"></div>
+            </div>
+            <div class="bg-lf-card border border-lf-border rounded-2xl p-4">
+              <p class="text-xs text-slate-500 font-semibold uppercase tracking-wide mb-2">⭐ Premium</p>
+              <p id="totalPremium" class="text-2xl font-black text-yellow-400">0</p>
+              <div class="w-6 h-1 bg-yellow-500 rounded-full mt-2 opacity-60"></div>
+            </div>
+            <div class="bg-lf-card border border-lf-border rounded-2xl p-4">
+              <p class="text-xs text-slate-500 font-semibold uppercase tracking-wide mb-2">Diblokir</p>
+              <p id="totalSuspend" class="text-2xl font-black text-red-400">0</p>
+              <div class="w-6 h-1 bg-red-500 rounded-full mt-2 opacity-60"></div>
+            </div>
+          </div>
 
-  // ── HAPUS USER ──────────────────────────────────────────────
-  window.hapusUser = async (uid, nama) => {
-    if (!confirm(`Hapus toko "${nama}"?\n\nData Firestore akan dihapus. Akun Auth perlu dihapus manual di Firebase Console > Authentication.`)) return;
-    try {
-      await deleteDoc(doc(db,'toko',uid));
-      toast(`Toko "${nama}" dihapus`);
-      loadUsers();
-    } catch(e) { toast('Gagal hapus: '+e.message,'err'); }
-  };
+          <!-- ADD USER -->
+          <div class="bg-lf-card border border-lf-border rounded-2xl p-5">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-4">Tambah User / Toko Baru</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <input id="namaToko" type="text" placeholder="Nama Toko"
+                class="bg-slate-800 border border-lf-border rounded-xl px-3 py-2.5 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-lf-orange transition">
+              <input id="namaPemilik" type="text" placeholder="Nama Pemilik"
+                class="bg-slate-800 border border-lf-border rounded-xl px-3 py-2.5 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-lf-orange transition">
+              <input id="emailUser" type="email" placeholder="Email"
+                class="bg-slate-800 border border-lf-border rounded-xl px-3 py-2.5 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-lf-orange transition">
+              <input id="passUser" type="password" placeholder="Password (min 6)"
+                class="bg-slate-800 border border-lf-border rounded-xl px-3 py-2.5 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-lf-orange transition">
+              <button type="button" id="btnDaftar" onclick="daftarkanUser()"
+                class="bg-lf-orange hover:bg-lf-orange-hover text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                + Daftarkan
+              </button>
+            </div>
+          </div>
 
-  // ── HELPER ──────────────────────────────────────────────────
-  function escHtml(s) {
-    return s ? String(s).replace(/[&<>"']/g, m =>
-      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])) : '';
-  }
-</script>
+          <!-- USER TABLE -->
+          <div class="bg-lf-card border border-lf-border rounded-2xl overflow-hidden">
+
+            <!-- Table controls -->
+            <div class="p-4 border-b border-lf-border flex flex-col sm:flex-row gap-3">
+              <div class="relative flex-1">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input id="searchInput" type="text" placeholder="Cari toko, pemilik, email..."
+                  oninput="filterTable()" class="w-full bg-slate-800 border border-lf-border rounded-xl pl-9 pr-3 py-2 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-lf-orange transition">
+              </div>
+              <div class="flex gap-2">
+                <select id="filterStatus" onchange="filterTable()"
+                  class="bg-slate-800 border border-lf-border rounded-xl px-3 py-2 text-slate-300 text-xs focus:outline-none focus:border-lf-orange transition">
+                  <option value="">Semua</option>
+                  <option value="aktif">Aktif</option>
+                  <option value="blokir">Diblokir</option>
+                  <option value="premium">Premium</option>
+                  <option value="gratis">Gratis</option>
+                </select>
+                <button onclick="ambilDataUser()" title="Refresh data"
+                  class="px-3 py-2 bg-slate-800 border border-lf-border rounded-xl text-slate-400 hover:text-white hover:border-slate-500 transition text-xs font-medium flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-lf-border">
+                    <th class="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-slate-600 font-semibold w-10">#</th>
+                    <th class="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-slate-600 font-semibold">Toko</th>
+                    <th class="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-slate-600 font-semibold hidden md:table-cell">Email</th>
+                    <th class="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-slate-600 font-semibold hidden lg:table-cell">Omset</th>
+                    <th class="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-slate-600 font-semibold">Status</th>
+                    <th class="py-3 px-4 text-left text-[10px] uppercase tracking-wider text-slate-600 font-semibold">Paket</th>
+                    <th class="py-3 px-4 text-right text-[10px] uppercase tracking-wider text-slate-600 font-semibold">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tabelUser" class="divide-y divide-lf-border/50">
+                  <tr><td colspan="7" class="py-16 text-center text-slate-600 text-sm">Memuat data...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Footer count -->
+            <div class="px-4 py-2.5 border-t border-lf-border/50">
+              <span id="tableCount" class="text-xs text-slate-600"></span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/admin-daftar.js"></script>
 </body>
 </html>

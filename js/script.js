@@ -1,141 +1,412 @@
-import { db } from './firebase.js';
+/**
+ * LINKify — Public Storefront (script.js)
+ * Fixed: observer timing, removed backgroundAttachment:fixed, batched DOM
+ */
+
+import { db, CONFIG } from '../firebase.js';
 import {
-  collection, getDocs, query, orderBy, doc, getDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  collection, getDocs, query, orderBy,
+  doc, getDoc, setDoc, increment
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { escHtml, rupiah, checkPremium, hexToRgb } from './utils.js';
 
-// ── HELPERS ──────────────────────────────────────────────────
-const esc    = s => s ? String(s).replace(/[&<>"']/g, m =>
-  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])) : '';
-const rupiah = v => Number(v||0).toLocaleString('id-ID');
-const produkCol = uid => collection(db, 'toko', uid, 'produk');
+// ── STATE ───────────────────────────────────────────────────────────────────
+const urlParams    = new URLSearchParams(window.location.search);
+const USER_ID      = urlParams.get('uid');
+let allProducts    = [];
+let activeKategori = 'Semua';
+let waUtama        = 'https://wa.me/';
 
-// ── UID DARI URL ──────────────────────────────────────────────
-const uid = new URLSearchParams(location.search).get('uid');
+// Single IntersectionObserver instance — created once, never re-created
+let revealObserver = null;
 
-// ── INIT ─────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-  if (!uid) {
-    document.getElementById('productList').innerHTML =
-      `<div style="grid-column:1/-1;text-align:center;padding:40px;color:rgba(255,255,255,0.4);font-size:13px">
-        Link tidak valid. Pastikan URL mengandung ?uid=...
-      </div>`;
+// ── INIT ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (!USER_ID) {
+    document.body.innerHTML =
+      '<div style="color:rgba(255,255,255,0.5);text-align:center;padding:80px 20px;font-family:Poppins,sans-serif;font-size:14px;">Toko tidak ditemukan.<br><span style="font-size:12px;opacity:0.5;">Pastikan URL mengandung ?uid=...</span></div>';
     return;
   }
-  await Promise.all([loadSettings(), loadProducts()]);
+
+  // Create observers once upfront
+  initRevealObserver();
+  initJellyHandler();
+
+  // Run async work
+  bootstrap();
 });
 
-// ── SETTINGS ─────────────────────────────────────────────────
+async function bootstrap() {
+  await loadSettings();
+  // Observe static fade-up elements AFTER settings applied
+  observeFadeUp();
+  await loadProducts();
+}
+
+// ── REVEAL OBSERVER — single instance ──────────────────────────────────────
+function initRevealObserver() {
+  if (revealObserver) return;
+  revealObserver = new IntersectionObserver(
+    entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('visible');
+        revealObserver.unobserve(e.target);
+      });
+    },
+    { threshold: 0.06, rootMargin: '0px 0px -10px 0px' }
+  );
+}
+
+function observeFadeUp() {
+  const io = new IntersectionObserver(
+    entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('show');
+        io.unobserve(e.target);
+      });
+    },
+    { threshold: 0.08 }
+  );
+  document.querySelectorAll('.fade-up').forEach(el => io.observe(el));
+}
+
+function observeNewCards(container) {
+  if (!revealObserver || !container) return;
+  const cards = container.querySelectorAll('.reveal:not(.visible)');
+  cards.forEach((el, i) => {
+    // Max stagger: 4 steps
+    const step = Math.min(i, 4);
+    el.className = el.className.replace(/reveal-delay-\d/g, '').trim();
+    if (step > 0) el.classList.add('reveal-delay-' + step);
+    revealObserver.observe(el);
+  });
+}
+
+// ── JELLY — delegation, one listener only ──────────────────────────────────
+function initJellyHandler() {
+  document.addEventListener('pointerdown', e => {
+    const el = e.target.closest('.jelly-click');
+    if (el) { el.classList.remove('bounce-back'); }
+  }, { passive: true });
+
+  document.addEventListener('pointerup', e => {
+    const el = e.target.closest('.jelly-click');
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.classList.add('bounce-back');
+      setTimeout(() => el.classList.remove('bounce-back'), 240);
+    });
+  }, { passive: true });
+}
+
+// ── ANALYTICS ───────────────────────────────────────────────────────────────
+async function trackEvent(field) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    await setDoc(
+      doc(db, 'toko', USER_ID, 'stats', today),
+      { [field]: increment(1) },
+      { merge: true }
+    );
+  } catch { /* non-critical */ }
+}
+
+window.trackClick = type => trackEvent(type === 'wa' ? 'waClicks' : 'shopeeClicks');
+
+// ── LOAD SETTINGS ───────────────────────────────────────────────────────────
 async function loadSettings() {
   try {
-    const snap = await getDoc(doc(db, 'toko', uid));
-    if (!snap.exists()) return;
-    const s = snap.data();
-
-    // Nama & bio
-    const nameEl = document.getElementById('storeName');
-    const bioEl  = document.getElementById('storeBio');
-    if (nameEl) nameEl.textContent = s.namaToko || 'My Store';
-    if (bioEl)  bioEl.textContent  = s.bio      || '';
-
-    // Footer
-    const footerEl = document.getElementById('footerStore');
-    if (footerEl) footerEl.textContent = `© ${new Date().getFullYear()} ${s.namaToko || 'My Store'}`;
-
-    // Logo
-    if (s.logo) {
-      const img = document.getElementById('profileImg');
-      if (img) img.src = s.logo;
+    const snap = await getDoc(doc(db, 'toko', USER_ID));
+    if (!snap.exists()) {
+      document.getElementById('username').textContent = 'Toko tidak ditemukan';
+      return;
     }
 
-    // Page title
-    document.title = `${s.namaToko || 'My Store'} — LINKify`;
+    const s       = snap.data();
+    const isPrem  = checkPremium(s);
 
-    // WhatsApp
-    const wa = s.wa || '#';
-    const linkWa   = document.getElementById('link-wa');
-    const floatWa  = document.getElementById('floatWa');
-    if (linkWa)  { linkWa.href  = wa; linkWa.dataset.wa = wa; }
-    if (floatWa) { floatWa.href = wa; }
+    // 1. Theme template — no backgroundAttachment:fixed (kills mobile perf)
+    const tpl    = isPrem ? (s.premium?.template || 'default') : 'default';
+    const tplBg  = isPrem ? (s.premium?.templateBg || '')      : '';
+    const tplAcc = isPrem ? (s.premium?.templateAccent || '')  : '';
+    applyTemplate(tpl, tplBg);
 
-    // Shopee
+    // 2. Accent color
+    const accent = (isPrem && s.premium?.accentColor)
+      ? s.premium.accentColor
+      : (tplAcc || '#FF6B35');
+    document.documentElement.style.setProperty('--idx-accent',     accent);
+    document.documentElement.style.setProperty('--idx-accent-rgb', hexToRgb(accent));
+
+    // 3. Verified badge
+    const badge = document.getElementById('verified-badge');
+    if (badge) badge.style.display = isPrem ? 'inline-flex' : 'none';
+
+    // 4. Footer branding
+    const footerBrand = document.querySelector('.footer-brand');
+    if (footerBrand) footerBrand.style.display = isPrem ? 'none' : '';
+
+    // 5. Store info — batch all text writes
+    const storeName = s.namaToko || 'My Store';
+    document.getElementById('username').textContent      = storeName;
+    document.title                                        = storeName + ' - LINKify';
+    const fs = document.getElementById('footer-store');
+    if (fs) fs.textContent = '© 2025 ' + storeName;
+
+    const bioEl = document.getElementById('bio');
+    if (bioEl) bioEl.textContent = s.bio || '';
+
+    const profImg = document.getElementById('profileImg');
+    if (profImg && s.logo) profImg.src = s.logo;
+
+    // 6. WA links
+    waUtama = s.wa || 'https://wa.me/';
+    const waBtn  = document.getElementById('waBtn');
+    const waMain = document.getElementById('link-wa-main');
+    if (waBtn)  { waBtn.href = waUtama; waBtn.dataset.wa = waUtama; }
+    if (waMain) waMain.href = waUtama;
+
+    // 7. Shopee
     if (s.shopee) {
       const elShopee = document.getElementById('link-shopee');
       if (elShopee) { elShopee.href = s.shopee; elShopee.classList.remove('hidden'); }
     }
 
-    // Tokopedia — opsional, set via config atau settings
-    // Uncomment baris berikut jika ingin pakai link Tokopedia dari settings toko
-    // if (s.tokped) { const el = document.getElementById('link-tokped'); if(el){ el.href=s.tokped; el.classList.remove('hidden'); } }
+    // 8. Social icons — single DocumentFragment write
+    renderSocialIcons(s);
 
+    // 9. Tokopedia default
+    const elTok = document.getElementById('link-tokped');
+    if (elTok && CONFIG?.links?.tokopedia) elTok.href = CONFIG.links.tokopedia;
+
+    // 10. Custom buttons (premium)
+    if (isPrem && Array.isArray(s.customButtons) && s.customButtons.length) {
+      renderCustomButtons(s.customButtons);
+    }
+
+    // 11. Track visit — once per session
+    if (!sessionStorage.getItem('vf_' + USER_ID)) {
+      sessionStorage.setItem('vf_' + USER_ID, '1');
+      trackEvent('visits');
+    }
   } catch (err) {
-    console.error('loadSettings:', err);
+    console.error('[loadSettings]', err);
   }
 }
 
-// ── PRODUK ───────────────────────────────────────────────────
+function renderSocialIcons(s) {
+  const container = document.getElementById('social-icons');
+  const bar       = document.getElementById('social-bar');
+  if (!container || !bar) return;
+
+  const map = [
+    { key: 'instagram', id: 'ico-instagram', label: 'Instagram', color: '#E1306C' },
+    { key: 'tiktok',    id: 'ico-tiktok',    label: 'TikTok',    color: '#010101' },
+    { key: 'twitter',   id: 'ico-twitter',   label: 'X / Twitter', color: '#000000' },
+    { key: 'facebook',  id: 'ico-facebook',  label: 'Facebook',  color: '#1877F2' },
+    { key: 'youtube',   id: 'ico-youtube',   label: 'YouTube',   color: '#FF0000' },
+  ];
+
+  const frag = document.createDocumentFragment();
+  let has = false;
+
+  map.forEach(({ key, id, label, color }) => {
+    if (!s[key]) return;
+    has = true;
+    const a = document.createElement('a');
+    a.href      = s[key];
+    a.target    = '_blank';
+    a.rel       = 'noopener noreferrer';
+    a.className = 'social-icon-btn';
+    a.setAttribute('aria-label', label);
+    a.style.setProperty('--social-color', color);
+    a.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><use href="#${id}"/></svg>`;
+    frag.appendChild(a);
+  });
+
+  if (has) { container.appendChild(frag); bar.style.display = ''; }
+}
+
+function renderCustomButtons(buttons) {
+  const section = document.getElementById('custom-buttons-section');
+  if (!section) return;
+  const wrap = section.querySelector('.custom-btn-wrap');
+  if (!wrap) return;
+
+  const frag = document.createDocumentFragment();
+  buttons.forEach(btn => {
+    if (!btn.label || !btn.url) return;
+    const a = document.createElement('a');
+    a.href      = btn.url;
+    a.target    = '_blank';
+    a.rel       = 'noopener noreferrer';
+    a.className = 'platform-btn custom-btn';
+    if (btn.color) a.style.background = btn.color;
+    a.innerHTML = `
+      <div class="icon-box">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="white" aria-hidden="true">
+          <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+      </div>
+      ${escHtml(btn.label)}`;
+    frag.appendChild(a);
+  });
+
+  wrap.appendChild(frag);
+  section.style.display = '';
+}
+
+// ── LOAD PRODUCTS ───────────────────────────────────────────────────────────
 async function loadProducts() {
   const container = document.getElementById('productList');
+  if (!container) return;
+
   try {
-    const q    = query(produkCol(uid), orderBy('createdAt', 'desc'));
+    const q    = query(collection(db, 'toko', USER_ID, 'produk'), orderBy('createdAt', 'desc'));
     const snap = await getDocs(q);
 
     if (snap.empty) {
-      container.innerHTML =
-        `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:rgba(255,255,255,0.35);font-size:13px">
-          Belum ada produk di toko ini.
-        </div>`;
+      container.innerHTML = '<div class="grid-span-all empty-state">Belum ada produk</div>';
       return;
     }
 
-    const waUtama = document.getElementById('link-wa')?.dataset.wa || '#';
-    container.innerHTML = '';
+    allProducts = [];
+    snap.forEach(ds => allProducts.push({ id: ds.id, ...ds.data() }));
 
-    snap.forEach(ds => {
-      const p  = ds.data();
-      const wa = p.wa || waUtama;
-      const pesan = encodeURIComponent(
-        `Halo kak, saya mau tanya/pesan:\n• Produk: ${p.nama}\n• Harga: Rp ${rupiah(p.harga)}`
-      );
+    renderKategoriFilter();
 
-      const card = document.createElement('div');
-      card.className = 'prod-card fade-up';
-      card.innerHTML = `
-        <div class="prod-img-wrap">
-          <img class="prod-img" src="${esc(p.img)}" alt="${esc(p.nama)}"
-               loading="lazy"
-               onerror="this.src='https://placehold.co/600x400/1a1a2e/ffffff?text=Foto'">
-          ${p.stok == 0 ? `<div class="habis-overlay">HABIS</div>` : ''}
-        </div>
-        <div class="prod-body">
-          <div class="prod-name">${esc(p.nama)}</div>
-          <div class="prod-price">Rp${rupiah(p.harga)}</div>
-          <div class="prod-btns">
-            <a href="${esc(wa)}?text=${pesan}" target="_blank" rel="noopener" class="prod-btn btn-wa">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              WA
-            </a>
-            ${p.shopee ? `
-            <a href="${esc(p.shopee)}" target="_blank" rel="noopener" class="prod-btn btn-shopee">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.793 7.507c0-2.075-.828-3.952-2.168-5.308a.675.675 0 00-.95-.014.664.664 0 00-.013.944 6.506 6.506 0 011.8 4.378 6.501 6.501 0 01-6.504 6.487 6.499 6.499 0 01-6.5-6.487 6.497 6.497 0 011.8-4.378.664.664 0 00-.013-.944.675.675 0 00-.95.014A7.824 7.824 0 004.127 7.507c0 .332.022.659.063.98H2.672a1.354 1.354 0 00-1.348 1.214L.024 21.347A1.344 1.344 0 001.37 22.86h21.26a1.344 1.344 0 001.346-1.513l-1.3-11.626a1.354 1.354 0 00-1.348-1.214h-1.597a7.9 7.9 0 00.062-.98zM12 1.14a2.694 2.694 0 110 5.388A2.694 2.694 0 0112 1.14z"/></svg>
-              Shopee
-            </a>` : ''}
-          </div>
-        </div>`;
-      container.appendChild(card);
-    });
+    // Unggulan section
+    const unggulan   = allProducts.filter(p => p.unggulan);
+    const secEl      = document.getElementById('unggulan-section');
+    const unggulanEl = document.getElementById('unggulanList');
 
-    // Trigger animasi fade-up setelah render
-    requestAnimationFrame(() => {
-      document.querySelectorAll('#productList .fade-up').forEach((el, i) => {
-        setTimeout(() => el.classList.add('show'), i * 60);
-      });
-    });
+    if (unggulan.length && secEl && unggulanEl) {
+      secEl.style.display = '';
+      unggulanEl.innerHTML = unggulan.map(buildProductCard).join('');
+      observeNewCards(unggulanEl);
+    } else if (secEl) {
+      secEl.style.display = 'none';
+    }
+
+    renderFilteredProducts();
 
   } catch (err) {
-    console.error('loadProducts:', err);
-    container.innerHTML =
-      `<div style="grid-column:1/-1;text-align:center;padding:40px;color:rgba(255,100,100,0.7);font-size:13px">
-        Gagal memuat produk.<br><small>${err.message}</small>
-      </div>`;
+    console.error('[loadProducts]', err);
+    container.innerHTML = '<div class="grid-span-all empty-state" style="color:rgba(255,100,100,0.6)">Gagal memuat produk. Refresh halaman.</div>';
+  }
+}
+
+// ── KATEGORI ─────────────────────────────────────────────────────────────────
+function renderKategoriFilter() {
+  const el = document.getElementById('kategori-filter');
+  if (!el) return;
+
+  const cats = new Set(allProducts.map(p => p.kategori).filter(Boolean));
+  if (cats.size === 0) { el.style.display = 'none'; return; }
+
+  const tabs = ['Semua', ...cats];
+  el.style.display = '';
+  el.innerHTML = tabs.map(k =>
+    `<button class="kat-btn${k === activeKategori ? ' active' : ''}" data-kat="${escHtml(k)}">${escHtml(k)}</button>`
+  ).join('');
+
+  // Single delegated listener — not per-button
+  el.addEventListener('click', e => {
+    const btn = e.target.closest('.kat-btn');
+    if (!btn) return;
+    activeKategori = btn.dataset.kat;
+    el.querySelectorAll('.kat-btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderFilteredProducts();
+  });
+}
+
+function renderFilteredProducts() {
+  const container = document.getElementById('productList');
+  if (!container) return;
+
+  const list = activeKategori === 'Semua'
+    ? allProducts
+    : allProducts.filter(p => p.kategori === activeKategori);
+
+  if (!list.length) {
+    container.innerHTML = '<div class="grid-span-all empty-state">Tidak ada produk di kategori ini</div>';
+    return;
+  }
+
+  // Single innerHTML write — no per-card DOM touch
+  container.innerHTML = list.map(buildProductCard).join('');
+  observeNewCards(container);
+}
+
+// ── PRODUCT CARD ─────────────────────────────────────────────────────────────
+function buildProductCard(p) {
+  const wa        = p.wa || waUtama;
+  const nama      = p.nama || '';
+  const stokNol   = Number(p.stok) === 0;
+  const hasDiskon = p.hargaAsli && Number(p.hargaAsli) > Number(p.harga);
+  const pct       = hasDiskon ? Math.round((1 - p.harga / p.hargaAsli) * 100) : 0;
+  const pesanWa   = encodeURIComponent('Halo, saya mau pesan:\n- Produk: ' + nama + '\n- Harga: Rp ' + rupiah(p.harga));
+
+  const shopeeBtn = p.shopee
+    ? `<a href="${escHtml(p.shopee)}" target="_blank" rel="noopener noreferrer" class="prod-btn prod-btn-shopee jelly-click" onclick="trackClick('shopee')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><use href="#ico-shopee"/></svg>Shopee
+      </a>`
+    : '';
+
+  return `<div class="product-card reveal">
+    <div class="prod-img-wrap">
+      <img src="${escHtml(p.img || '')}" alt="${escHtml(nama)}" class="product-img" loading="lazy" decoding="async"
+           onerror="this.src='https://placehold.co/400x300/1a1a2e/555?text=Foto'">
+      ${stokNol   ? '<div class="badge-stok">HABIS</div>'       : ''}
+      ${hasDiskon ? `<div class="badge-diskon">-${pct}%</div>` : ''}
+      ${p.unggulan ? '<div class="badge-unggulan">⭐</div>'     : ''}
+    </div>
+    <div class="product-info">
+      <p class="product-name">${escHtml(nama)}</p>
+      <div class="price-row">
+        <span class="product-price">Rp${rupiah(p.harga)}</span>
+        ${hasDiskon ? `<span class="harga-coret">Rp${rupiah(p.hargaAsli)}</span>` : ''}
+      </div>
+      ${p.deskripsi ? `<p class="product-desc">${escHtml(p.deskripsi)}</p>` : ''}
+      <div class="prod-btns">
+        <a href="${escHtml(wa)}?text=${pesanWa}" target="_blank" rel="noopener noreferrer"
+           class="prod-btn prod-btn-wa jelly-click" onclick="trackClick('wa')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="white" aria-hidden="true"><use href="#ico-wa"/></svg>
+          Pesan WA
+        </a>
+        ${shopeeBtn}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── TEMPLATE — no backgroundAttachment:fixed ────────────────────────────────
+function applyTemplate(tpl, bgUrl) {
+  document.body.dataset.template = tpl;
+
+  // Use a pseudo-element approach via class instead of inline fixed bg
+  let bgEl = document.getElementById('tpl-bg-layer');
+  if (!bgEl) {
+    bgEl = document.createElement('div');
+    bgEl.id = 'tpl-bg-layer';
+    bgEl.setAttribute('aria-hidden', 'true');
+    document.body.prepend(bgEl);
+  }
+
+  if (bgUrl) {
+    // backgroundAttachment: scroll is GPU-composited on mobile, not 'fixed'
+    bgEl.style.cssText = `
+      position:fixed;inset:0;z-index:-1;pointer-events:none;
+      background-image:url('${bgUrl}');
+      background-size:cover;background-position:center top;
+      background-attachment:scroll;
+      opacity:1;
+    `;
+    document.body.style.backgroundColor = 'rgba(0,0,0,0.01)';
+  } else {
+    bgEl.style.cssText = 'position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;';
+    document.body.style.backgroundColor = '';
   }
 }

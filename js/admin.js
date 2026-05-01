@@ -1,353 +1,648 @@
-import { auth, db } from './firebase.js';
-import { CONFIG } from './config.js';
+import { auth, db, CONFIG } from '../firebase.js';
 import {
   onAuthStateChanged, signOut, updatePassword, updateEmail,
   EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, getDocs, addDoc, doc, updateDoc, deleteDoc,
-  serverTimestamp, getDoc, query, orderBy, setDoc
+  serverTimestamp, getDoc, query, orderBy, setDoc, where, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { escHtml, checkPremium, hexToRgb, ACCENT_COLORS, DAY_NAMES, formatDate, TEMPLATE_LIST } from './utils.js';
 
-// ── HELPERS ──────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const esc = s => s ? String(s).replace(/[&<>"']/g, m =>
-  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;' }[m])) : '';
-const rupiah = v => Number(v||0).toLocaleString('id-ID');
-const produkCol = uid => collection(db,'toko',uid,'produk');
-const produkDoc = (uid,id) => doc(db,'toko',uid,'produk',id);
+const CLOUD_NAME = CONFIG.cloudinary.cloudName;
+const CLOUD_PRESET = CONFIG.cloudinary.uploadPreset;
 
-// ── TOAST ─────────────────────────────────────────────────────
-let _toastTimer;
-function toast(msg, type='ok') {
-  const el = $('toast');
-  el.textContent = msg;
-  el.style.background = type==='ok' ? '#111' : type==='err' ? '#EF4444' : '#F59E0B';
-  el.classList.add('show');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
-}
+document.addEventListener('DOMContentLoaded', () => {
 
-// ── CLOCK ─────────────────────────────────────────────────────
-function tickClock() {
-  const now = new Date();
-  const t = now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const d = now.toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  $('clock-big') && ($('clock-big').textContent = t);
-  $('clock-time') && ($('clock-time').textContent = t.slice(0,5));
-  $('clock-date') && ($('clock-date').textContent = d);
-}
-tickClock(); setInterval(tickClock, 1000);
+  const sidebar      = document.getElementById('sidebar');
+  const overlay      = document.getElementById('overlay');
+  const btnHamburger = document.getElementById('btn-hamburger');
+  const btnLogout    = document.getElementById('btn-logout');
+  const adminEmail   = document.getElementById('admin-email');
+  const btnCopyLink  = document.getElementById('btn-copy-link');
 
-// ── SIDEBAR & TABS ────────────────────────────────────────────
-const sidebar   = $('sidebar');
-const overlay   = $('overlay');
-const openSB  = () => { sidebar.classList.add('open');   overlay.classList.add('show');   document.body.style.overflow='hidden'; };
-const closeSB = () => { sidebar.classList.remove('open');overlay.classList.remove('show');document.body.style.overflow=''; };
-$('btn-hamburger').addEventListener('click', openSB);
-overlay.addEventListener('click', closeSB);
+  const productsList = document.getElementById('products-list');
+  const btnAddProd   = document.getElementById('btn-add-product');
 
-const TABS = { dashboard:'Dashboard', products:'Produk', settings:'Pengaturan Toko', account:'Keamanan Akun' };
-document.querySelectorAll('.sb-btn[data-tab]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tab = btn.dataset.tab;
-    document.querySelectorAll('.sb-btn[data-tab]').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    $('tab-'+tab).classList.add('active');
-    $('topbar-title').textContent = TABS[tab] || 'Dashboard';
-    closeSB();
-  });
-});
+  const productModal = document.getElementById('product-modal');
+  const modalPull    = document.getElementById('modal-pull');
+  const productForm  = document.getElementById('product-form');
+  const modalTitle   = document.getElementById('modal-title');
+  const btnSaveProd  = document.getElementById('btn-save-product');
+  const uploadZone   = document.getElementById('upload-zone');
+  const inpProdFile  = document.getElementById('inp-prod-file');
+  const imgPrevWrap  = document.getElementById('img-preview-wrap');
+  const imgPreview   = document.getElementById('img-preview');
+  const inpProdKategori  = document.getElementById('inp-prod-kategori');
+  const inpProdHargaAsli = document.getElementById('inp-prod-harga-asli');
+  const inpProdUnggulan  = document.getElementById('inp-prod-unggulan');
 
-// ── COPY LINK ─────────────────────────────────────────────────
-function copyLink(uid) {
-  const base = window.location.origin + (window.location.hostname.includes('github.io') ? '/LINKify' : '');
-  const link = `${base}/index.html?uid=${uid}`;
-  navigator.clipboard.writeText(link)
-    .then(() => toast('Link toko berhasil dicopy! 🎉'))
-    .catch(() => toast('Gagal copy link', 'err'));
-}
-$('btn-copy-link').addEventListener('click', () => {
-  const uid = auth.currentUser?.uid;
-  if (uid) copyLink(uid); else toast('Login dulu!','err');
-});
-$('btn-copy-link-2').addEventListener('click', () => {
-  const uid = auth.currentUser?.uid;
-  if (uid) copyLink(uid); else toast('Login dulu!','err');
-});
+  const logoPreview  = document.getElementById('logo-preview');
+  const btnLogoPick  = document.getElementById('btn-logo-pick');
+  const inpLogoFile  = document.getElementById('inp-logo-file');
+  const inpLogoUrl   = document.getElementById('inp-logo-url');
+  const inpUsername  = document.getElementById('inp-username');
+  const inpBio       = document.getElementById('inp-bio');
+  const inpWa        = document.getElementById('inp-wa');
+  const inpShopee    = document.getElementById('inp-shopee');
+  const inpInstagram = document.getElementById('inp-instagram');
+  const inpTiktok    = document.getElementById('inp-tiktok');
+  const inpTwitter   = document.getElementById('inp-twitter');
+  const inpFacebook  = document.getElementById('inp-facebook');
+  const inpYoutube   = document.getElementById('inp-youtube');
+  const btnSaveSett  = document.getElementById('btn-save-settings');
 
-// ── AUTH ──────────────────────────────────────────────────────
-$('btn-logout').addEventListener('click', () => {
-  if (confirm('Yakin mau keluar?')) signOut(auth);
-});
+  const inpNewEmail  = document.getElementById('inp-new-email');
+  const inpNewPass   = document.getElementById('inp-new-pass');
+  const inpOldPass   = document.getElementById('inp-old-pass');
+  const btnSaveAcc   = document.getElementById('btn-save-account');
 
-onAuthStateChanged(auth, async user => {
-  if (!user) return (location.href = 'login-user.html');
-  const snap = await getDoc(doc(db,'toko',user.uid));
-  if (!snap.exists()) {
-    toast('Akun belum terdaftar sebagai toko!','err');
-    return setTimeout(() => signOut(auth), 2000);
+  // Premium elements
+  const premiumBadge    = document.getElementById('premium-badge');
+  const premiumCta      = document.getElementById('premium-cta');
+  const premiumContent  = document.getElementById('premium-content');
+  const colorPickerWrap = document.getElementById('color-picker-wrap');
+  const qrImg           = document.getElementById('qr-img');
+  const btnDownloadQR   = document.getElementById('btn-download-qr');
+
+  function produkCol(uid) { return collection(db, 'toko', uid, 'produk'); }
+  function produkDoc(uid, id) { return doc(db, 'toko', uid, 'produk', id); }
+
+  let prodBlobUrl = null;
+  let logoBlobUrl = null;
+  let currentTokoData = null;
+  let currentAccent = '#FF6B35';
+
+  // ── TOAST ──
+  let toastTimer;
+  function toast(msg, type = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.background = type === 'ok' ? '#111' : type === 'err' ? '#EE4D2D' : '#B45309';
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
   }
-  $('sb-email').textContent = user.email;
-  $('inp-new-email').value  = user.email;
-  $('stat-email').textContent = user.email;
-  loadProducts(user.uid);
-  loadSettings(user.uid);
-  loadStats(user.uid);
-});
+  window.showToast = toast;
 
-// ── STATS ─────────────────────────────────────────────────────
-async function loadStats(uid) {
-  try {
-    const snap = await getDocs(produkCol(uid));
-    let total=0, habis=0;
-    snap.forEach(d => { total++; if(d.data().stok==0) habis++; });
-    $('stat-total').textContent = total;
-    $('stat-empty').textContent = habis;
-  } catch(e) { console.error('loadStats',e); }
-}
+  // ── CLOCK ──
+  const clockEl = document.getElementById('clock-time');
+  const dateEl  = document.getElementById('clock-date');
+  function tickClock() {
+    const now = new Date();
+    clockEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    dateEl.textContent  = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
 
-// ── PRODUK: LOAD ──────────────────────────────────────────────
-async function loadProducts(uid) {
-  const list = $('products-list');
-  list.innerHTML = [1,2,3].map(() =>
-    `<div class="skel-card"><div class="skel" style="height:140px"></div><div style="padding:12px">
-     <div class="skel" style="height:12px;width:70%;margin-bottom:8px"></div>
-     <div class="skel" style="height:14px;width:45%"></div></div></div>`).join('');
-  try {
-    const q    = query(produkCol(uid), orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      list.innerHTML = `<div class="empty">
-        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
-          <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
-        </svg>
-        <p class="empty-h">Belum ada produk</p>
-        <p class="empty-p">Klik "Tambah Produk" untuk mulai menambahkan.</p>
-      </div>`;
-      return;
-    }
-    list.innerHTML = '';
-    snap.forEach(ds => {
-      const p=ds.data(), id=ds.id;
-      const card = document.createElement('div');
-      card.className = 'p-card';
-      card.innerHTML = `
-        <img class="p-img" src="${esc(p.img)}" alt="${esc(p.nama)}"
-             onerror="this.src='https://placehold.co/400x300/F4F4F4/AAA?text=Foto'">
-        <div class="p-body">
-          <div class="p-name">${esc(p.nama)}</div>
-          <div class="p-price">Rp${rupiah(p.harga)}</div>
-          <div class="p-stok ${p.stok==0?'habis':''}">Stok: ${p.stok}${p.stok==0?' · Habis':''}</div>
-          <div class="p-acts">
-            <button class="btn-ed" data-id="${id}">Edit</button>
-            <button class="btn-del" data-id="${id}">Hapus</button>
-          </div>
-        </div>`;
-      list.appendChild(card);
+  // ── SIDEBAR ──
+  function openSidebar()  { sidebar.classList.add('open');    overlay.classList.add('show');    document.body.style.overflow = 'hidden'; }
+  function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('show'); document.body.style.overflow = ''; }
+  btnHamburger.addEventListener('click', openSidebar);
+  overlay.addEventListener('click', closeSidebar);
+
+  // ── TABS ──
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('show'));
+      btn.classList.add('active-tab');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('show');
+      closeSidebar();
     });
-  } catch(e) {
-    list.innerHTML = `<div class="empty"><p class="empty-h">Gagal memuat</p><p class="empty-p">${e.message}</p></div>`;
-  }
-}
+  });
 
-// ── PRODUK: MODAL ─────────────────────────────────────────────
-const modal   = $('product-modal');
-const imgPrev = $('img-preview');
-const openModal  = () => { modal.classList.add('open');    document.body.style.overflow='hidden'; };
-const closeModal = () => { modal.classList.remove('open'); document.body.style.overflow=''; };
-
-$('btn-add-product').addEventListener('click', () => {
-  $('product-form').reset();
-  $('inp-prod-id').value = '';
-  $('inp-prod-img').value = '';
-  $('inp-prod-file').value = '';
-  imgPrev.style.display = 'none';
-  $('modal-title').textContent = 'Tambah Produk Baru';
-  openModal();
-});
-$('modal-pull').addEventListener('click', closeModal);
-modal.addEventListener('click', e => { if(e.target===modal) closeModal(); });
-
-// Upload zone
-$('upload-zone').addEventListener('click', () => $('inp-prod-file').click());
-$('inp-prod-file').addEventListener('change', () => {
-  const f = $('inp-prod-file').files[0];
-  if (!f) return;
-  imgPrev.src = URL.createObjectURL(f);
-  imgPrev.style.display = 'block';
-});
-
-// Edit & Hapus
-$('products-list').addEventListener('click', async e => {
-  const id  = e.target.dataset.id;
-  const uid = auth.currentUser?.uid;
-  if (!id || !uid) return;
-
-  if (e.target.classList.contains('btn-ed')) {
-    try {
-      const snap = await getDoc(produkDoc(uid, id));
-      if (!snap.exists()) return toast('Produk tidak ditemukan','err');
-      const p = snap.data();
-      $('inp-prod-id').value    = id;
-      $('inp-prod-name').value  = p.nama      || '';
-      $('inp-prod-price').value = p.harga     || 0;
-      $('inp-prod-stock').value = p.stok      || 0;
-      $('inp-prod-desc').value  = p.deskripsi || '';
-      $('inp-prod-shopee').value= p.shopee    || '';
-      $('inp-prod-wa').value    = p.wa        || '';
-      $('inp-prod-img').value   = p.img       || '';
-      $('inp-prod-file').value  = '';
-      if (p.img) { imgPrev.src=p.img; imgPrev.style.display='block'; }
-      else imgPrev.style.display='none';
-      $('modal-title').textContent = 'Edit Produk';
-      openModal();
-    } catch(err) { toast('Gagal load: '+err.message,'err'); }
-  }
-
-  if (e.target.classList.contains('btn-del')) {
-    if (!confirm('Yakin hapus produk ini?')) return;
-    try {
-      await deleteDoc(produkDoc(uid, id));
-      toast('Produk dihapus');
-      loadProducts(uid);
-      loadStats(uid);
-    } catch(err) { toast('Gagal hapus: '+err.message,'err'); }
-  }
-});
-
-// Simpan produk
-$('product-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const uid  = auth.currentUser?.uid;
-  const id   = $('inp-prod-id').value;
-  const file = $('inp-prod-file').files[0];
-  let imgUrl = $('inp-prod-img').value;
-
-  if (!file && !imgUrl) return toast('Pilih foto produk dulu!','warn');
-
-  const btn = $('btn-save-product');
-  btn.disabled = true;
-  try {
-    if (file) {
-      btn.textContent = 'Upload foto...';
-      imgUrl = await uploadCloudinary(file);
-      if (!imgUrl) throw new Error('Upload foto gagal.');
-    }
-    btn.textContent = 'Menyimpan...';
-    const data = {
-      nama:      $('inp-prod-name').value.trim(),
-      harga:     Number($('inp-prod-price').value),
-      stok:      Number($('inp-prod-stock').value),
-      deskripsi: $('inp-prod-desc').value.trim(),
-      shopee:    $('inp-prod-shopee').value.trim(),
-      wa:        $('inp-prod-wa').value.trim(),
-      img:       imgUrl,
-      updatedAt: serverTimestamp()
-    };
-    if (id) {
-      await updateDoc(produkDoc(uid,id), data);
-      toast('Produk diperbarui! ✅');
+  // ── AUTH ──
+  onAuthStateChanged(auth, async user => {
+    if (user) {
+      const tokoSnap = await getDoc(doc(db, 'toko', user.uid));
+      if (tokoSnap.exists()) {
+        currentTokoData = tokoSnap.data();
+        adminEmail.textContent = user.email;
+        inpNewEmail.value = user.email;
+        loadProducts(user.uid);
+        loadSettings(user.uid);
+        loadStats(user.uid);
+        loadDashboardStats(user.uid);
+      } else {
+        toast('Akun ini belum terdaftar sebagai toko! Hubungi admin.', 'err');
+        setTimeout(() => signOut(auth), 2000);
+      }
     } else {
-      data.createdAt = serverTimestamp();
-      await addDoc(produkCol(uid), data);
-      toast('Produk ditambahkan! ✅');
+      window.location.href = 'login-user.html';
     }
-    closeModal();
-    loadProducts(uid);
-    loadStats(uid);
-  } catch(err) {
-    toast('Error: '+err.message,'err');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Simpan Produk';
+  });
+
+    // ── COPY LINK ──
+  if (btnCopyLink) {
+    btnCopyLink.addEventListener('click', () => {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return toast('Login dulu!', 'err');
+      const BASE_PATH = window.location.hostname.includes('github.io') ? '/LINKify' : '';
+      const link = `${window.location.origin}${BASE_PATH}/?uid=${uid}`;
+      navigator.clipboard.writeText(link)
+        .then(() => toast('Link toko berhasil dicopy!'))
+        .catch(() => toast('Gagal copy link', 'err'));
+    });
   }
-});
 
-// ── SETTINGS ─────────────────────────────────────────────────
-async function loadSettings(uid) {
-  try {
-    const snap = await getDoc(doc(db,'toko',uid));
-    if (!snap.exists()) return;
-    const s = snap.data();
-    $('inp-username').value = s.namaToko || '';
-    $('inp-bio').value      = s.bio      || '';
-    $('inp-wa').value       = s.wa       || '';
-    $('inp-shopee').value   = s.shopee   || '';
-    $('inp-logo-url').value = s.logo     || '';
-    if (s.logo) $('logo-preview').src = s.logo;
-  } catch(e) { console.error('loadSettings',e); }
-}
+  btnLogout.addEventListener('click', () => {
+    if (confirm('Yakin mau keluar?')) signOut(auth);
+  });
 
-$('btn-logo-pick').addEventListener('click', () => $('inp-logo-file').click());
-$('inp-logo-file').addEventListener('change', () => {
-  const f = $('inp-logo-file').files[0];
-  if (f) $('logo-preview').src = URL.createObjectURL(f);
-});
-
-$('btn-save-settings').addEventListener('click', async () => {
-  const uid = auth.currentUser?.uid;
-  const btn = $('btn-save-settings');
-  btn.disabled = true; btn.textContent = 'Menyimpan...';
-  try {
-    let logo = $('inp-logo-url').value;
-    const f  = $('inp-logo-file').files[0];
-    if (f) {
-      logo = await uploadCloudinary(f);
-      if (!logo) throw new Error('Upload logo gagal.');
-      $('inp-logo-url').value = logo;
+  // ── PREMIUM UI UPDATE ──
+  function updatePremiumUI() {
+    const isPrem = checkPremium(currentTokoData);
+    premiumBadge.classList.toggle('hidden', !isPrem);
+    premiumCta.classList.toggle('hidden', isPrem);
+    premiumContent.classList.toggle('hidden', !isPrem);
+    if (isPrem) {
+      currentAccent = currentTokoData.premium?.accentColor || '#FF6B35';
+      renderColorPicker();
+      renderQR();
+      renderTemplatePicker();
     }
-    await setDoc(doc(db,'toko',uid), {
-      namaToko: $('inp-username').value.trim(),
-      bio:      $('inp-bio').value.trim(),
-      wa:       $('inp-wa').value.trim(),
-      shopee:   $('inp-shopee').value.trim(),
-      logo
-    }, { merge:true });
-    toast('Pengaturan tersimpan! ✅');
-  } catch(err) { toast('Gagal: '+err.message,'err'); }
-  finally { btn.disabled=false; btn.textContent='Simpan Pengaturan'; }
-});
-
-// ── AKUN ──────────────────────────────────────────────────────
-$('btn-save-account').addEventListener('click', async () => {
-  const user     = auth.currentUser;
-  const newEmail = $('inp-new-email').value.trim();
-  const newPass  = $('inp-new-pass').value;
-  const oldPass  = $('inp-old-pass').value;
-  const btn      = $('btn-save-account');
-
-  if (!oldPass) return toast('Password lama wajib diisi!','warn');
-  if (newEmail===user.email && !newPass) return toast('Tidak ada perubahan','warn');
-  if (newPass && newPass.length<6) return toast('Password minimal 6 karakter!','warn');
-
-  btn.disabled=true; btn.textContent='Memverifikasi...';
-  try {
-    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, oldPass));
-    if (newEmail !== user.email) await updateEmail(user, newEmail);
-    if (newPass) await updatePassword(user, newPass);
-    toast('Akun diperbarui! Keluar otomatis...');
-    setTimeout(() => signOut(auth), 2000);
-  } catch(err) {
-    const msg = err.code==='auth/wrong-password' ? 'Password lama salah!' : err.message;
-    toast(msg,'err');
-  } finally { btn.disabled=false; btn.textContent='Update Akun'; }
-});
-
-// ── CLOUDINARY UPLOAD ─────────────────────────────────────────
-async function uploadCloudinary(file) {
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('upload_preset', CONFIG.cloudinary.uploadPreset);
-  try {
-    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CONFIG.cloudinary.cloudName}/image/upload`, { method:'POST', body:fd });
-    const data = await res.json();
-    if (data.secure_url) return data.secure_url;
-    throw new Error(data.error?.message || 'Upload gagal');
-  } catch(err) {
-    toast('Upload gagal: '+err.message,'err');
-    return null;
   }
-}
+
+  // ── PREMIUM: TEMPLATE PICKER ──
+  function renderTemplatePicker() {
+    const wrap = document.getElementById('template-options');
+    if (!wrap) return;
+    const currentTpl = currentTokoData?.premium?.template || 'default';
+    wrap.innerHTML = TEMPLATE_LIST.map(t => `
+      <div class="tpl-card${t.id === currentTpl ? ' active' : ''}" data-tpl="${t.id}">
+        <div class="tpl-preview" style="background:${t.bg ? `url('${t.bg}') center/cover no-repeat` : t.preview};">
+          <div class="tpl-overlay"></div>
+          <div class="tpl-mock">
+            <div class="tpl-mock-avatar"></div>
+            <div class="tpl-mock-line" style="background:${t.accent};opacity:0.9;width:55%;"></div>
+            <div class="tpl-mock-line" style="width:38%;"></div>
+            <div class="tpl-mock-btn" style="background:${t.accent};"></div>
+          </div>
+        </div>
+        <div class="tpl-dot" style="background:${t.accent};"></div>
+        <div class="tpl-label">${t.label}</div>
+        <div class="tpl-desc">${t.desc}</div>
+        ${t.id === currentTpl ? '<div class="tpl-active-badge">✓ Aktif</div>' : ''}
+      </div>`).join('');
+
+    wrap.querySelectorAll('.tpl-card').forEach(card => {
+      card.addEventListener('click', async () => {
+        const tpl = card.dataset.tpl;
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
+        const tplData = TEMPLATE_LIST.find(t => t.id === tpl);
+        try {
+          await updateDoc(doc(db, 'toko', uid), {
+            'premium.template': tpl,
+            'premium.templateBg': tplData?.bg || '',
+            'premium.templateAccent': tplData?.accent || ''
+          });
+          currentTokoData.premium = {
+            ...currentTokoData.premium,
+            template: tpl,
+            templateBg: tplData?.bg || '',
+            templateAccent: tplData?.accent || ''
+          };
+          renderTemplatePicker();
+          toast('Template diperbarui!');
+        } catch (e) {
+          toast('Gagal simpan template', 'err');
+        }
+      });
+    });
+  }
+
+  // ── DASHBOARD STATS (total produk & stok habis) ──
+  async function loadDashboardStats(uid) {
+    try {
+      const snap = await getDocs(produkCol(uid));
+      let total = 0, empty = 0;
+      snap.forEach(d => { total++; if (d.data().stok === 0) empty++; });
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-empty').textContent = empty;
+    } catch (e) { console.error('loadDashboardStats:', e); }
+  }
+
+  // ── PREMIUM: STATISTIK 7 HARI ──
+  async function loadStats(uid) {
+    updatePremiumUI();
+    const isPrem = checkPremium(currentTokoData);
+    if (!isPrem) return;
+
+    try {
+      const today = new Date();
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        days.push(d.toISOString().split('T')[0]);
+      }
+
+      const q = query(
+        collection(db, 'toko', uid, 'stats'),
+        where('__name__', '>=', days[0]),
+        where('__name__', '<=', days[6]),
+        orderBy('__name__')
+      );
+      const snap = await getDocs(q);
+
+      const data = {};
+      snap.forEach(d => { data[d.id] = d.data(); });
+
+      let totalVisits = 0, totalWa = 0, totalShopee = 0;
+      const chartData = [];
+
+      days.forEach(day => {
+        const d = data[day] || {};
+        const v = d.visits || 0;
+        const w = d.waClicks || 0;
+        const s = d.shopeeClicks || 0;
+        totalVisits += v;
+        totalWa += w;
+        totalShopee += s;
+        chartData.push({ day, label: formatDate(day), visits: v, wa: w, shopee: s });
+      });
+
+      const maxVisits = Math.max(...chartData.map(d => d.visits), 1);
+
+      document.getElementById('stat-visits').textContent = totalVisits;
+      document.getElementById('stat-wa').textContent = totalWa;
+      document.getElementById('stat-shopee').textContent = totalShopee;
+
+      const chartEl = document.getElementById('stats-chart');
+      if (!chartEl) return;
+      chartEl.innerHTML = chartData.map(d => {
+        const h = Math.max((d.visits / maxVisits) * 100, 4);
+        return `
+          <div class="chart-col">
+            <div class="chart-bar" style="height:${h}%"></div>
+            <span class="chart-label">${d.label}</span>
+            <span class="chart-val">${d.visits}</span>
+          </div>`;
+      }).join('');
+
+      // Premium expiry info
+      const endDate = currentTokoData.premium?.endDate;
+      if (endDate) {
+        const end = endDate?.toDate ? endDate.toDate() : new Date(endDate);
+        document.getElementById('premium-expiry').textContent =
+          'Berlaku sampai ' + end.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+    } catch (e) {
+      console.error('loadStats:', e);
+    }
+  }
+
+  // ── PREMIUM: COLOR PICKER ──
+  function renderColorPicker() {
+    const wrap = document.getElementById('color-options');
+    if (!wrap) return;
+    wrap.innerHTML = ACCENT_COLORS.map(c => `
+      <button type="button" class="color-circle${c.hex === currentAccent ? ' active' : ''}"
+              data-color="${c.hex}" style="background:${c.hex}" title="${c.label}"
+              aria-label="Warna ${c.label}"></button>
+    `).join('');
+
+    wrap.querySelectorAll('.color-circle').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const color = btn.dataset.color;
+        wrap.querySelectorAll('.color-circle').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentAccent = color;
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
+        try {
+          await updateDoc(doc(db, 'toko', uid), { 'premium.accentColor': color });
+          toast('Warna aksen diperbarui!');
+        } catch (e) {
+          toast('Gagal simpan warna', 'err');
+        }
+      });
+    });
+  }
+
+  // ── PREMIUM: QR CODE ──
+  function renderQR() {
+    const uid = auth.currentUser?.uid;
+    if (!uid || !qrImg) return;
+    const storeUrl = `${window.location.origin}/?uid=${uid}`;
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(storeUrl)}&color=${encodeURIComponent(currentAccent.replace('#', ''))}`;
+    qrImg.dataset.url = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(storeUrl)}&color=${encodeURIComponent(currentAccent.replace('#', ''))}&format=png`;
+  }
+
+  if (btnDownloadQR) {
+    btnDownloadQR.addEventListener('click', async () => {
+      const url = qrImg?.dataset.url;
+      if (!url) return;
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `qr-${currentTokoData?.namaToko || 'toko'}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        toast('QR Code berhasil didownload!');
+      } catch (e) {
+        window.open(url, '_blank');
+      }
+    });
+  }
+
+  // ── PRODUK: LOAD ──
+  async function loadProducts(uid) {
+    productsList.innerHTML = `
+      <div class="skel-card"><div class="skel" style="height:130px;border-radius:14px 14px 0 0"></div><div style="padding:10px 12px"><div class="skel" style="height:12px;width:70%;margin-bottom:7px"></div><div class="skel" style="height:13px;width:45%"></div></div></div>
+      <div class="skel-card"><div class="skel" style="height:130px;border-radius:14px 14px 0 0"></div><div style="padding:10px 12px"><div class="skel" style="height:12px;width:55%;margin-bottom:7px"></div><div class="skel" style="height:13px;width:40%"></div></div></div>
+      <div class="skel-card"><div class="skel" style="height:130px;border-radius:14px 14px 0 0"></div><div style="padding:10px 12px"><div class="skel" style="height:12px;width:80%;margin-bottom:7px"></div><div class="skel" style="height:13px;width:50%"></div></div></div>`;
+    try {
+      const q = query(produkCol(uid), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        productsList.innerHTML = `<div class="empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5">
+            <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
+            <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+          </svg>
+          <p class="empty-h">Belum ada produk</p>
+          <p class="empty-p">Klik "Tambah Produk" untuk mulai.</p>
+        </div>`;
+        return;
+      }
+
+      let html = '';
+      snap.forEach(ds => {
+        const p = ds.data(), id = ds.id;
+        const stokNol = Number(p.stok) === 0;
+        html += `
+          <div class="p-card">
+            <img class="p-img" src="${escHtml(p.img)}" alt="${escHtml(p.nama)}"
+                 onerror="this.src='https://placehold.co/400x300/F4F4F4/AAA?text=Error'">
+            <div class="p-body">
+              <div class="p-name">${escHtml(p.nama)}${p.unggulan ? ' <span style="color:#F59E0B;font-size:12px;">⭐</span>' : ''}</div>
+              <div class="p-price">Rp${Number(p.harga).toLocaleString('id-ID')}${p.hargaAsli > p.harga ? ` <span style="text-decoration:line-through;color:var(--text-muted);font-size:11px;font-weight:400">Rp${Number(p.hargaAsli).toLocaleString('id-ID')}</span>` : ''}</div>
+              <div class="p-stock">Stok: ${p.stok}${stokNol ? ' · <span style="color:var(--danger)">Habis</span>' : ''}${p.kategori ? ` · <span style="color:var(--text-muted)">${escHtml(p.kategori)}</span>` : ''}</div>
+              <div class="p-acts">
+                <button type="button" class="btn-ed" data-id="${id}">Edit</button>
+                <button type="button" class="btn-del" data-id="${id}">Hapus</button>
+              </div>
+            </div>
+          </div>`;
+      });
+      productsList.innerHTML = html;
+    } catch (e) {
+      productsList.innerHTML = `<div class="empty"><p class="empty-h">Gagal memuat produk</p><p class="empty-p">${e.message}</p></div>`;
+    }
+  }
+
+  // ── MODAL ──
+  function openModal()  { productModal.classList.add('open');    document.body.style.overflow = 'hidden'; }
+  function closeModal() { productModal.classList.remove('open'); document.body.style.overflow = ''; }
+
+  btnAddProd.addEventListener('click', () => {
+    productForm.reset();
+    document.getElementById('inp-prod-id').value  = '';
+    document.getElementById('inp-prod-img').value = '';
+    inpProdFile.value = '';
+    inpProdKategori.value = '';
+    inpProdHargaAsli.value = '';
+    inpProdUnggulan.checked = false;
+    if (prodBlobUrl) { URL.revokeObjectURL(prodBlobUrl); prodBlobUrl = null; }
+    imgPrevWrap.style.display = 'none';
+    imgPreview.src = '';
+    modalTitle.textContent = 'Tambah Produk Baru';
+    openModal();
+  });
+
+  modalPull.addEventListener('click', closeModal);
+  productModal.addEventListener('click', e => { if (e.target === productModal) closeModal(); });
+
+  uploadZone.addEventListener('click', () => inpProdFile.click());
+  inpProdFile.addEventListener('change', () => {
+    const file = inpProdFile.files[0];
+    if (!file) return;
+    if (prodBlobUrl) URL.revokeObjectURL(prodBlobUrl);
+    prodBlobUrl = URL.createObjectURL(file);
+    imgPreview.src = prodBlobUrl;
+    imgPrevWrap.style.display = 'block';
+  });
+
+  productsList.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-id]');
+    if (!btn) return;
+    const id  = btn.dataset.id;
+    const uid = auth.currentUser?.uid;
+    if (!id || !uid) return;
+
+    if (btn.classList.contains('btn-ed')) {
+      try {
+        const snap = await getDoc(produkDoc(uid, id));
+        if (!snap.exists()) { toast('Produk tidak ditemukan', 'err'); return; }
+        const p = snap.data();
+        document.getElementById('inp-prod-id').value    = id;
+        document.getElementById('inp-prod-name').value  = p.nama      || '';
+        document.getElementById('inp-prod-price').value = p.harga     || 0;
+        document.getElementById('inp-prod-stock').value = p.stok      || 0;
+        document.getElementById('inp-prod-desc').value  = p.deskripsi || '';
+        document.getElementById('inp-prod-shopee').value= p.shopee    || '';
+        document.getElementById('inp-prod-wa').value    = p.wa        || '';
+        document.getElementById('inp-prod-img').value   = p.img       || '';
+        inpProdKategori.value  = p.kategori   || '';
+        inpProdHargaAsli.value = p.hargaAsli  || '';
+        inpProdUnggulan.checked = p.unggulan  || false;
+        inpProdFile.value = '';
+        if (p.img) {
+          if (prodBlobUrl) URL.revokeObjectURL(prodBlobUrl);
+          prodBlobUrl = null;
+          imgPreview.src = p.img;
+          imgPrevWrap.style.display = 'block';
+        } else {
+          imgPrevWrap.style.display = 'none';
+        }
+        modalTitle.textContent = 'Edit Produk';
+        openModal();
+      } catch (err) { toast('Gagal load data: ' + err.message, 'err'); }
+    }
+
+    if (btn.classList.contains('btn-del')) {
+      if (!confirm('Yakin hapus produk ini?')) return;
+      try {
+        await deleteDoc(produkDoc(uid, id));
+        toast('Produk dihapus.');
+        loadProducts(uid);
+        loadDashboardStats(uid);
+      } catch (err) { toast('Gagal hapus: ' + err.message, 'err'); }
+    }
+  });
+
+  productForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const uid  = auth.currentUser?.uid;
+    const id   = document.getElementById('inp-prod-id').value;
+    const file = inpProdFile.files[0];
+    let imgUrl = document.getElementById('inp-prod-img').value;
+
+    if (!file && !imgUrl) { toast('Pilih foto produk!', 'warn'); return; }
+
+    btnSaveProd.disabled = true;
+    try {
+      if (file) {
+        btnSaveProd.textContent = 'Upload foto...';
+        imgUrl = await uploadCloudinary(file);
+        if (!imgUrl) throw new Error('Upload foto gagal.');
+      }
+
+      btnSaveProd.textContent = 'Menyimpan...';
+      const data = {
+        nama:      document.getElementById('inp-prod-name').value.trim(),
+        harga:     Number(document.getElementById('inp-prod-price').value),
+        stok:      Number(document.getElementById('inp-prod-stock').value),
+        deskripsi: document.getElementById('inp-prod-desc').value.trim(),
+        shopee:    document.getElementById('inp-prod-shopee').value.trim(),
+        wa:        document.getElementById('inp-prod-wa').value.trim(),
+        img:       imgUrl,
+        kategori:  inpProdKategori.value,
+        hargaAsli: Number(inpProdHargaAsli.value) || 0,
+        unggulan:  inpProdUnggulan.checked,
+        updatedAt: serverTimestamp()
+      };
+
+      if (id) {
+        await updateDoc(produkDoc(uid, id), data);
+        toast('Produk diperbarui!');
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(produkCol(uid), data);
+        toast('Produk ditambahkan!');
+      }
+      closeModal();
+      loadProducts(uid);
+      loadDashboardStats(uid);
+    } catch (err) { toast('Error: ' + err.message, 'err'); }
+    finally {
+      btnSaveProd.disabled = false;
+      btnSaveProd.textContent = 'Simpan Produk';
+    }
+  });
+
+  // ── SETTINGS: LOAD ──
+  async function loadSettings(uid) {
+    try {
+      const snap = await getDoc(doc(db, 'toko', uid));
+      if (snap.exists()) {
+        currentTokoData = snap.data();
+        const s = currentTokoData;
+        inpUsername.value = s.namaToko || '';
+        inpBio.value      = s.bio      || '';
+        inpWa.value       = s.wa       || '';
+        inpShopee.value   = s.shopee   || '';
+        inpInstagram.value = s.instagram || '';
+        inpTiktok.value    = s.tiktok    || '';
+        inpTwitter.value   = s.twitter   || '';
+        inpFacebook.value  = s.facebook  || '';
+        inpYoutube.value   = s.youtube   || '';
+        inpLogoUrl.value  = s.logo     || '';
+        if (s.logo) logoPreview.src = s.logo;
+        updatePremiumUI();
+      }
+    } catch (e) { console.error('loadSettings:', e); }
+  }
+
+  btnLogoPick.addEventListener('click', () => inpLogoFile.click());
+  inpLogoFile.addEventListener('change', () => {
+    const file = inpLogoFile.files[0];
+    if (!file) return;
+    if (logoBlobUrl) URL.revokeObjectURL(logoBlobUrl);
+    logoBlobUrl = URL.createObjectURL(file);
+    logoPreview.src = logoBlobUrl;
+  });
+
+  btnSaveSett.addEventListener('click', async () => {
+    const uid = auth.currentUser?.uid;
+    btnSaveSett.disabled = true;
+    btnSaveSett.textContent = 'Menyimpan...';
+    try {
+      let logoUrl = inpLogoUrl.value;
+      const file  = inpLogoFile.files[0];
+      if (file) {
+        logoUrl = await uploadCloudinary(file);
+        if (!logoUrl) throw new Error('Upload logo gagal.');
+        inpLogoUrl.value = logoUrl;
+      }
+      await setDoc(doc(db, 'toko', uid), {
+        namaToko: inpUsername.value.trim(),
+        bio:      inpBio.value.trim(),
+        wa:       inpWa.value.trim(),
+        shopee:   inpShopee.value.trim(),
+        instagram: inpInstagram.value.trim(),
+        tiktok:    inpTiktok.value.trim(),
+        twitter:   inpTwitter.value.trim(),
+        facebook:  inpFacebook.value.trim(),
+        youtube:   inpYoutube.value.trim(),
+        logo:     logoUrl
+      }, { merge: true });
+      toast('Pengaturan disimpan!');
+    } catch (err) { toast('Gagal simpan: ' + err.message, 'err'); }
+    finally {
+      btnSaveSett.disabled = false;
+      btnSaveSett.textContent = 'Simpan Pengaturan';
+    }
+  });
+
+  // ── AKUN: UPDATE ──
+    btnSaveAcc.addEventListener('click', async () => {
+    const newEmail = inpNewEmail.value.trim();
+    const newPass  = inpNewPass.value;
+    const oldPass  = inpOldPass.value;
+    const user     = auth.currentUser;
+
+    if (!oldPass) { toast('Masukkan password lama!', 'warn'); return; }
+    if (newEmail === user.email && !newPass) { toast('Tidak ada perubahan.', 'warn'); return; }
+
+    btnSaveAcc.disabled = true;
+    btnSaveAcc.textContent = 'Memverifikasi...';
+    try {
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, oldPass));
+      if (newEmail !== user.email) {
+        if (!newEmail.includes('@')) throw new Error('Format email tidak valid!');
+        await updateEmail(user, newEmail);
+      }
+      if (newPass) {
+        if (newPass.length < 6) throw new Error('Password minimal 6 karakter!');
+        await updatePassword(user, newPass);
+        // Sinkron password baru ke Firestore supaya admin bisa hapus akun nanti
+        const uid = user.uid;
+        await updateDoc(doc(db, 'toko', uid), { authPass: newPass });
+      }
+      toast('Akun diperbarui! Keluar otomatis...');
+      setTimeout(() => signOut(auth), 1800);
+    } catch (err) {
+      const msg = err.code === 'auth/wrong-password' ? 'Password lama salah!' : err.message;
+      toast(msg, 'err');
+    } finally {
+      btnSaveAcc.disabled = false;
+      btnSaveAcc.textContent = 'Update Akun';
+    }
+  });
+  // ── CLOUDINARY ──
+  async function uploadCloudinary(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUD_PRESET);
+    try {
+      const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.secure_url) return data.secure_url;
+      throw new Error(data.error?.message || 'Upload gagal');
+    } catch (err) {
+      toast('Upload gagal: ' + err.message, 'err');
+      return null;
+    }
+  }
+
+});

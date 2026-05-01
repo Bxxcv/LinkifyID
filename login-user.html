@@ -3,99 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login — LINKify</title>
-  <link rel="icon" href="logo-linkify.png">
-  <link rel="apple-touch-icon" href="logo-linkify.png">
+  <title>Login Toko</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/login.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" sizes="32x32" href="logo-linkify.png">
+  <link rel="apple-touch-icon" href="logo-linkify.png">
 </head>
-<body>
-  <div class="card">
-    <div class="logo-wrap">
-      <img src="logo-linkify.png" alt="LINKify" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=font-size:22px;font-weight:800>L</span>'">
-    </div>
-    <h1>Selamat Datang</h1>
-    <p class="sub">Masuk ke dashboard toko kamu</p>
-
-    <div class="field">
-      <label>EMAIL</label>
-      <input id="email" type="email" placeholder="email@toko.com" autocomplete="email">
-    </div>
-    <div class="field">
-      <label>PASSWORD</label>
-      <div class="pass-wrap">
-        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
-        <button class="eye-btn" id="eyeBtn" type="button" aria-label="Tampilkan password">
-          <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-          </svg>
-        </button>
+<body class="login-page">
+  <div class="earth-card" style="width:100%;max-width:400px;padding:32px;animation:fadeIn 0.6s ease-out;">
+    <div style="display:flex;justify-content:center;margin-bottom:24px;">
+      <div class="login-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+          <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+          <path d="M2 7h20"/>
+          <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"/>
+        </svg>
       </div>
     </div>
-
-    <button class="btn-login" id="loginBtn">Masuk</button>
-    <div class="err" id="errMsg"></div>
-    <p class="brand">Powered by LINKify &copy; 2025</p>
+    <h1 class="login-title">Login Toko Kamu</h1>
+    <p class="login-sub">Masuk untuk kelola produk & toko</p>
+    <div class="login-fields">
+      <div>
+        <label class="login-label">Email</label>
+        <input id="email" type="email" autocomplete="email" placeholder="email@tokokamu.com" class="login-input">
+      </div>
+      <div>
+        <label class="login-label">Password</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" class="login-input">
+      </div>
+    </div>
+    <button type="button" id="loginBtn" class="login-btn">Masuk</button>
+    <p id="errorMsg" class="login-error"></p>
   </div>
 
-  <script type="module">
-    import { auth } from './js/firebase.js';
-    import { signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-    // Redirect jika sudah login
-    onAuthStateChanged(auth, u => { if (u) location.href = 'admin.html'; });
-
-    // Toggle password visibility
-    const passInput = document.getElementById('password');
-    const eyeBtn    = document.getElementById('eyeBtn');
-    const eyeIcon   = document.getElementById('eyeIcon');
-    eyeBtn.addEventListener('click', () => {
-      const show = passInput.type === 'password';
-      passInput.type = show ? 'text' : 'password';
-      eyeIcon.innerHTML = show
-        ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
-        : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-    });
-
-    // Login
-    const btn    = document.getElementById('loginBtn');
-    const errMsg = document.getElementById('errMsg');
-
-    function showErr(msg) {
-      errMsg.textContent = msg;
-      errMsg.classList.add('show');
-    }
-    function clearErr() { errMsg.classList.remove('show'); }
-
-    // Enter key support
-    document.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
-
-    btn.addEventListener('click', async () => {
-      clearErr();
-      const email = document.getElementById('email').value.trim();
-      const pass  = document.getElementById('password').value;
-
-      if (!email) return showErr('Email tidak boleh kosong');
-      if (!pass)  return showErr('Password tidak boleh kosong');
-
-      btn.disabled = true;
-      btn.textContent = 'Masuk...';
-      try {
-        await signInWithEmailAndPassword(auth, email, pass);
-      } catch (e) {
-        const map = {
-          'auth/user-not-found':    'Email tidak terdaftar',
-          'auth/wrong-password':    'Password salah',
-          'auth/invalid-email':     'Format email tidak valid',
-          'auth/too-many-requests': 'Terlalu banyak percobaan. Coba lagi nanti',
-          'auth/invalid-credential':'Email atau password salah',
-        };
-        showErr(map[e.code] || 'Login gagal: ' + e.message);
-        btn.disabled = false;
-        btn.textContent = 'Masuk';
-      }
-    });
-  </script>
+  <script type="module" src="js/login-user.js"></script>
 </body>
 </html>
